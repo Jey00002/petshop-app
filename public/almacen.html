@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetShop Pro - Almacén e Inventario</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/viewer.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon-badge"><i class='bx bxs-store-alt'></i></div>
+                <span>PetShop Pro</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li data-role="Administrador"><a href="admin.html"><i class='bx bxs-dashboard'></i> <span>Dashboard</span></a></li>
+                <li data-role="Administrador,Vendedor"><a href="pos.html"><i class='bx bx-cart-alt'></i> <span>Ventas (POS)</span></a></li>
+                <li data-role="Administrador,Almacén,Almacen"><a href="almacen.html" class="active"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
+            </ul>
+        </aside>
+        
+        <div class="main-content">
+            <header class="topbar">
+                <h2>Control de Inventario y Almacén</h2>
+                <div class="user-chip">
+                    <i class='bx bx-user-circle' style="font-size: 1.25rem; color:var(--primary)"></i>
+                    <span id="userName">Almacén</span>
+                    <button class="btn btn-ghost" onclick="logout()" style="padding: 4px 8px; margin-left:10px;" title="Cerrar sesión">
+                        <i class='bx bx-log-out'></i>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-body">
+                <div id="bannerAlertas"></div>
+
+                <div class="card">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+                        <h3><i class='bx bx-package'></i> Catálogo de Inventario</h3>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div style="position:relative; width: 240px;">
+                                <i class='bx bx-search' style="position:absolute; left:12px; top:12px; color:#94a3b8;"></i>
+                                <input type="text" id="searchInv" class="form-control" placeholder="Buscar por nombre, código..." style="padding-left: 38px;">
+                            </div>
+                            <label style="font-size:0.8rem; display:flex; align-items:center; gap:6px; cursor:pointer;">
+                                <input type="checkbox" id="chkVerInactivos" onchange="initAlmacen()"> Ver inactivos
+                            </label>
+                            <button class="btn btn-outline" onclick="abrirModalProveedores()">
+                                <i class='bx bx-buildings'></i> Proveedores
+                            </button>
+                            <button class="btn btn-primary" onclick="abrirModalNuevoProducto()">
+                                <i class='bx bx-plus-circle'></i> Nuevo Producto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Foto</th>
+                                    <th>Nombre del Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Proveedor</th>
+                                    <th>Precio</th>
+                                    <th>Stock</th>
+                                    <th>Mínimo</th>
+                                    <th>Estado</th>
+                                    <th style="min-width: 190px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaProductos">
+                                <tr><td colspan="10" class="empty-state"><i class='bx bx-loader-alt bx-spin'></i><p>Cargando datos de almacén...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Registrar Entrada de Stock (RF04) -->
+    <div class="modal-overlay" id="modalEntrada">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Registrar Entrada de Stock</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalEntrada')"></i>
+            </div>
+            <form id="entradaForm">
+                <input type="hidden" id="entIdProd">
+                <div class="form-group">
+                    <label>Producto Seleccionado</label>
+                    <input type="text" id="entNombre" class="form-control" readonly style="background:#f1f5f9; font-weight:600;">
+                </div>
+                <div class="form-group">
+                    <label>Cantidad a Ingresar</label>
+                    <input type="number" id="entCant" class="form-control" required min="1" placeholder="Ej. 10">
+                </div>
+                <div class="form-group">
+                    <label>Motivo del Ingreso</label>
+                    <input type="text" id="entMotivo" class="form-control" value="Compra a proveedor" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top:10px;" id="btnGuardarEntrada">
+                    <i class='bx bx-check'></i> Guardar Entrada
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cambiar Foto del Producto -->
+    <div class="modal-overlay" id="modalImagen">
+        <div class="modal">
+            <div class="modal-header">
+                <span>Actualizar Foto del Producto</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalImagen')"></i>
+            </div>
+            <form id="imagenForm">
+                <input type="hidden" id="imgIdProd">
+                <div class="form-group">
+                    <label id="imgProdNombreLabel">Producto</label>
+                    <input type="url" id="imgUrlInput" class="form-control" placeholder="https://..." required>
+                </div>
+                <div style="margin-bottom: 15px; text-align: center;">
+                    <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">Vista previa de la imagen:</p>
+                    <img id="imgPreviewModal" src="" style="width: 130px; height: 130px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); display: none; margin: 0 auto;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;" id="btnGuardarImagen">
+                    <i class='bx bx-image-add'></i> Guardar Foto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Registrar Nuevo Producto (RF02, RF10) -->
+    <div class="modal-overlay" id="modalNuevoProducto">
+        <div class="modal" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <span>Registrar Nuevo Producto</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalNuevoProducto')"></i>
+            </div>
+            <form id="nuevoProductoForm">
+                <div class="form-group">
+                    <label for="npNombre">Nombre del Producto *</label>
+                    <input type="text" id="npNombre" class="form-control" placeholder="Ej. Cama Ortopédica para Perro Talla L" required>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="npCategoria">Categoría *</label>
+                        <select id="npCategoria" class="form-control" required>
+                            <option value="">Cargando...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="npProveedor">Proveedor *</label>
+                        <select id="npProveedor" class="form-control" required>
+                            <option value="">Cargando...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="npPrecio">Precio Venta (S/) *</label>
+                        <input type="number" id="npPrecio" class="form-control" placeholder="0.00" step="0.10" min="0.10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="npStock">Stock Inicial *</label>
+                        <input type="number" id="npStock" class="form-control" placeholder="Ej. 10" min="0" value="10" required>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="npStockMinimo">Stock Mínimo</label>
+                        <input type="number" id="npStockMinimo" class="form-control" value="5" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="npCodigo">Código de Barras</label>
+                        <div style="display:flex; gap:6px;">
+                            <input type="text" id="npCodigo" class="form-control" placeholder="Automático">
+                            <button type="button" class="btn btn-outline" style="padding: 0 10px;" onclick="generarCodigoBarras()" title="Generar código">
+                                <i class='bx bx-refresh'></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="npDescripcion">Descripción del Producto</label>
+                    <input type="text" id="npDescripcion" class="form-control" placeholder="Detalles de tamaño, ingredientes, raza, etc.">
+                </div>
+
+                <div class="form-group">
+                    <label for="npImagen">Foto / URL de Imagen</label>
+                    <input type="url" id="npImagen" class="form-control" placeholder="https://images.unsplash.com/...">
+                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="demo-chip" onclick="seleccionarPresetFoto('alimento')">Alimento</button>
+                        <button type="button" class="demo-chip" onclick="seleccionarPresetFoto('cachorro')">Cachorro</button>
+                        <button type="button" class="demo-chip" onclick="seleccionarPresetFoto('snack')">Snack</button>
+                        <button type="button" class="demo-chip" onclick="seleccionarPresetFoto('juguete')">Juguete</button>
+                        <button type="button" class="demo-chip" onclick="seleccionarPresetFoto('cama')">Cama</button>
+                    </div>
+                    <div id="wrapPreviewNuevo" style="margin-top:10px; text-align:center; display:none;">
+                        <img id="imgPreviewNuevo" src="" style="width:110px; height:110px; object-fit:cover; border-radius:10px; border:1px solid var(--border); margin:0 auto;">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;" id="btnCrearProducto">
+                    <i class='bx bx-check-circle'></i> Registrar y Guardar Producto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Editar Producto (RF03) -->
+    <div class="modal-overlay" id="modalEditarProducto">
+        <div class="modal" style="max-width: 520px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <span>Editar Producto</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalEditarProducto')"></i>
+            </div>
+            <form id="editarProductoForm">
+                <input type="hidden" id="editIdProd">
+                <div class="form-group">
+                    <label for="editNombre">Nombre del Producto *</label>
+                    <input type="text" id="editNombre" class="form-control" required>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="editCategoria">Categoría *</label>
+                        <select id="editCategoria" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProveedor">Proveedor *</label>
+                        <select id="editProveedor" class="form-control" required></select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label for="editPrecio">Precio Venta (S/) *</label>
+                        <input type="number" id="editPrecio" class="form-control" step="0.10" min="0.10" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStockMinimo">Stock Mínimo</label>
+                        <input type="number" id="editStockMinimo" class="form-control" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCodigo">Código de Barras</label>
+                    <input type="text" id="editCodigo" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="editDescripcion">Descripción</label>
+                    <input type="text" id="editDescripcion" class="form-control">
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;" id="btnGuardarEdicion">
+                    <i class='bx bx-save'></i> Guardar Cambios
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Catálogo de Proveedores (RF10) -->
+    <div class="modal-overlay" id="modalProveedores">
+        <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <span>Gestión de Proveedores</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalProveedores')"></i>
+            </div>
+            
+            <form id="formNuevoProveedor" style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                <div style="font-weight:700; font-size:0.85rem; color:var(--primary); margin-bottom:8px;">
+                    <i class='bx bx-plus-circle'></i> Registrar Nuevo Proveedor
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                    <input type="text" id="provNombre" class="form-control" placeholder="Nombre comercial *" required>
+                    <input type="text" id="provTelefono" class="form-control" placeholder="Teléfono">
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <input type="text" id="provContacto" class="form-control" placeholder="Correo o contacto de ventas">
+                    <button type="submit" class="btn btn-primary" style="white-space:nowrap;"><i class='bx bx-plus'></i> Agregar</button>
+                </div>
+            </form>
+
+            <div class="table-responsive" style="max-height: 250px; overflow-y:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Contacto</th>
+                            <th>Teléfono</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaProveedoresModal">
+                        <tr><td colspan="5" class="empty-state">Cargando proveedores...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="almacenViewerContainer" style="display: none;"></div>
+
+    <script src="js/viewer.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/almacen.js"></script>
+</body>
+</html>

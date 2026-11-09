@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetShop Pro - Acceso al Sistema</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-wrapper">
+        <!-- Panel Izquierdo: Branding & Beneficios Corporativos -->
+        <div class="login-brand-panel">
+            <div>
+                <div class="brand-badge-pill">
+                    <i class='bx bx-check-shield'></i> Plataforma Segura
+                </div>
+                <div class="brand-logo-large">
+                    <div class="brand-icon-box">
+                        <i class='bx bxs-store-alt'></i>
+                    </div>
+                    <span>PetShop Pro</span>
+                </div>
+                <p style="color: #99f6e4; font-size: 0.95rem; margin-top: 8px;">
+                    Sistema integral de gestión veterinaria, control de almacén y facturación POS.
+                </p>
+
+                <ul class="brand-features-list">
+                    <li>
+                        <i class='bx bx-barcode-reader'></i>
+                        <div>
+                            <strong>Punto de Venta Ágil (POS)</strong>
+                            <div style="font-size: 0.8rem; opacity: 0.85;">Cobros rápidos con soporte de efectivo, tarjeta y billeteras digitales.</div>
+                        </div>
+                    </li>
+                    <li>
+                        <i class='bx bx-layer'></i>
+                        <div>
+                            <strong>Inventario con Galería HD</strong>
+                            <div style="font-size: 0.8rem; opacity: 0.85;">Visualizador profesional de imágenes para cada producto y alerta de stock.</div>
+                        </div>
+                    </li>
+                    <li>
+                        <i class='bx bx-shield-quarter'></i>
+                        <div>
+                            <strong>Control de Roles & Seguridad</strong>
+                            <div style="font-size: 0.8rem; opacity: 0.85;">Permisos estrictos para Administrador, Ventas y Almacén.</div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="brand-footer-note">
+                <i class='bx bx-lock-alt'></i> Conexión encriptada SSL &bull; v2.5.0 Enterprise
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Formulario de Acceso y Recuperación -->
+        <div class="login-form-panel">
+            <!-- VISTA 1: INICIAR SESIÓN -->
+            <div id="viewLogin">
+                <div class="form-header-area">
+                    <h2>Bienvenido de nuevo</h2>
+                    <p>Ingresa tus credenciales para acceder al sistema</p>
+                </div>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="usuario">Usuario o Identificador</label>
+                        <div class="input-icon-wrap">
+                            <i class='bx bx-user input-icon-left'></i>
+                            <input type="text" id="usuario" class="form-control" placeholder="Ej. admin" required autocomplete="username">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 5px;">
+                        <label for="contrasena">Contraseña</label>
+                        <div class="input-icon-wrap">
+                            <i class='bx bx-lock-alt input-icon-left'></i>
+                            <input type="password" id="contrasena" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                            <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('contrasena', this)" title="Ver contraseña">
+                                <i class='bx bx-show'></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-extras-row">
+                        <label class="remember-label">
+                            <input type="checkbox" id="chkRecordar"> Recordarme
+                        </label>
+                        <a href="javascript:void(0)" onclick="mostrarRecuperacion()" class="link-recovery">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem;" id="btnSubmit">
+                        <span>Iniciar Sesión</span> <i class='bx bx-right-arrow-alt' style="font-size: 1.2rem;"></i>
+                    </button>
+                </form>
+
+                <!-- Accesos rápidos para demostración / pruebas -->
+                <div class="demo-users-bar">
+                    <div class="demo-users-title">
+                        <i class='bx bx-user-check'></i> Cuentas demo preconfiguradas:
+                    </div>
+                    <div class="demo-chips-grid">
+                        <button type="button" class="demo-chip" onclick="fillDemo('admin', 'admin123')">
+                            Admin (admin123)
+                        </button>
+                        <button type="button" class="demo-chip" onclick="fillDemo('caja01', 'caja123')">
+                            Vendedor (caja123)
+                        </button>
+                        <button type="button" class="demo-chip" onclick="fillDemo('alm01', 'alm123')">
+                            Almacén (alm123)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA 2: RECUPERACIÓN DE CONTRASEÑA -->
+            <div id="viewRecovery" style="display: none;">
+                <div class="form-header-area">
+                    <button type="button" class="btn btn-ghost" onclick="mostrarLogin()" style="padding: 0; margin-bottom: 10px; font-size: 0.85rem; color: var(--primary);">
+                        <i class='bx bx-arrow-back'></i> Volver a Iniciar Sesión
+                    </button>
+                    <h2>Recuperar Contraseña</h2>
+                    <p>Restablece tu acceso con tu usuario o correo registrado.</p>
+                </div>
+
+                <!-- Paso 1: Solicitar código -->
+                <div id="stepRequestCode">
+                    <form id="requestCodeForm">
+                        <div class="form-group">
+                            <label for="recoveryIdentificador">Usuario o Correo Institucional</label>
+                            <div class="input-icon-wrap">
+                                <i class='bx bx-envelope input-icon-left'></i>
+                                <input type="text" id="recoveryIdentificador" class="form-control" placeholder="Ej. admin o admin@petshop.com" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;" id="btnSendCode">
+                            <span>Solicitar Código de Verificación</span> <i class='bx bx-send'></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Paso 2: Introducir código y nueva contraseña -->
+                <div id="stepResetPassword" style="display: none;">
+                    <div class="code-display-banner" id="bannerCodigo">
+                        <div><i class='bx bx-check-circle'></i> <strong>Código generado:</strong></div>
+                        <div style="margin-top: 6px; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 0.82rem;">Tu código de seguridad es:</span>
+                            <b id="codigoTexto">------</b>
+                            <button type="button" class="demo-chip" style="margin: 0; padding: 3px 8px;" onclick="autollenarCodigo()">
+                                Usar código
+                            </button>
+                        </div>
+                    </div>
+
+                    <form id="resetPasswordForm">
+                        <div class="form-group">
+                            <label for="codigoInput">Código de 6 dígitos</label>
+                            <div class="input-icon-wrap">
+                                <i class='bx bx-key input-icon-left'></i>
+                                <input type="text" id="codigoInput" class="form-control" placeholder="123456" maxlength="6" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="nuevaContrasena">Nueva Contraseña</label>
+                            <div class="input-icon-wrap">
+                                <i class='bx bx-lock-alt input-icon-left'></i>
+                                <input type="password" id="nuevaContrasena" class="form-control" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                                <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('nuevaContrasena', this)">
+                                    <i class='bx bx-show'></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="confirmarContrasena">Confirmar Nueva Contraseña</label>
+                            <div class="input-icon-wrap">
+                                <i class='bx bx-check-double input-icon-left'></i>
+                                <input type="password" id="confirmarContrasena" class="form-control" placeholder="Repite la contraseña" minlength="6" required>
+                                <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('confirmarContrasena', this)">
+                                    <i class='bx bx-show'></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-accent" style="width: 100%; padding: 12px;" id="btnResetSubmit">
+                            <i class='bx bx-shield-quarter'></i> Actualizar Contraseña
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // Cargar usuario guardado si existe
+        document.addEventListener('DOMContentLoaded', () => {
+            const remembered = localStorage.getItem('remembered_user');
+            if (remembered) {
+                document.getElementById('usuario').value = remembered;
+                document.getElementById('chkRecordar').checked = true;
+            }
+        });
+
+        // Alternar visibilidad de contraseñas
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'bx bx-hide';
+            } else {
+                input.type = 'password';
+                icon.className = 'bx bx-show';
+            }
+        }
+
+        // Rellenar credenciales demo
+        function fillDemo(user, pwd) {
+            document.getElementById('usuario').value = user;
+            document.getElementById('contrasena').value = pwd;
+            showToast(`Credenciales cargadas para ${user}`, 'info');
+        }
+
+        // Navegación entre vistas
+        function mostrarRecuperacion() {
+            document.getElementById('viewLogin').style.display = 'none';
+            document.getElementById('viewRecovery').style.display = 'block';
+            document.getElementById('stepRequestCode').style.display = 'block';
+            document.getElementById('stepResetPassword').style.display = 'none';
+            
+            // Prefill usuario si ya estaba escrito
+            const u = document.getElementById('usuario').value.trim();
+            if (u) document.getElementById('recoveryIdentificador').value = u;
+        }
+
+        function mostrarLogin() {
+            document.getElementById('viewRecovery').style.display = 'none';
+            document.getElementById('viewLogin').style.display = 'block';
+        }
+
+        // Login submit
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmit');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner"></div> Verificando...';
+            btn.disabled = true;
+
+            const usuario = document.getElementById('usuario').value.trim();
+            const contrasena = document.getElementById('contrasena').value;
+            const recordar = document.getElementById('chkRecordar').checked;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, contrasena })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.mensaje || data.error);
+
+                if (recordar) {
+                    localStorage.setItem('remembered_user', usuario);
+                } else {
+                    localStorage.removeItem('remembered_user');
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('rol', data.rol);
+                localStorage.setItem('nombre', data.nombre);
+
+                showToast(`¡Bienvenido, ${data.nombre}!`, 'success');
+                setTimeout(() => {
+                    if (data.rol === 'Administrador') window.location.href = 'admin.html';
+                    else if (data.rol === 'Vendedor') window.location.href = 'pos.html';
+                    else if (data.rol === 'Almacén' || data.rol === 'Almacen') window.location.href = 'almacen.html';
+                    else window.location.href = 'admin.html';
+                }, 400);
+            } catch (error) {
+                showToast(error.message, 'error');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        });
+
+        // Paso 1: Solicitar código de recuperación
+        let activeRecoveryUser = '';
+        let lastDemoCode = '';
+
+        document.getElementById('requestCodeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnSendCode');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner"></div> Generando...';
+            btn.disabled = true;
+
+            const identificador = document.getElementById('recoveryIdentificador').value.trim();
+
+            try {
+                const res = await fetch('/api/auth/recuperar-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identificador })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.mensaje || 'Error al solicitar código');
+
+                activeRecoveryUser = data.usuario;
+                lastDemoCode = data.codigo_demo;
+                document.getElementById('codigoTexto').innerText = lastDemoCode;
+
+                showToast('Código de recuperación generado exitosamente', 'success');
+
+                // Avanzar al paso 2
+                document.getElementById('stepRequestCode').style.display = 'none';
+                document.getElementById('stepResetPassword').style.display = 'block';
+            } catch (error) {
+                showToast(error.message, 'error');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        });
+
+        function autollenarCodigo() {
+            if (lastDemoCode) {
+                document.getElementById('codigoInput').value = lastDemoCode;
+                showToast('Código copiado al campo de verificación', 'info');
+            }
+        }
+
+        // Paso 2: Restablecer contraseña
+        document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const codigo = document.getElementById('codigoInput').value.trim();
+            const nueva = document.getElementById('nuevaContrasena').value;
+            const confirm = document.getElementById('confirmarContrasena').value;
+
+            if (nueva !== confirm) {
+                return showToast('Las contraseñas no coinciden', 'error');
+            }
+            if (nueva.length < 6) {
+                return showToast('La contraseña debe tener mínimo 6 caracteres', 'warning');
+            }
+
+            const btn = document.getElementById('btnResetSubmit');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<div class="spinner"></div> Guardando...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/restablecer-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        identificador: activeRecoveryUser,
+                        codigo: codigo,
+                        nueva_contrasena: nueva
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.mensaje || 'Error al actualizar contraseña');
+
+                showToast('¡Contraseña actualizada con éxito! Ya puedes ingresar.', 'success');
+                
+                // Redirigir al login y prellenar campos
+                setTimeout(() => {
+                    mostrarLogin();
+                    document.getElementById('usuario').value = activeRecoveryUser;
+                    document.getElementById('contrasena').value = nueva;
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                }, 1000);
+            } catch (error) {
+                showToast(error.message, 'error');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

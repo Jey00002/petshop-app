@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetShop Pro - Punto de Venta (POS)</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/viewer.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon-badge"><i class='bx bxs-store-alt'></i></div>
+                <span>PetShop Pro</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li data-role="Administrador"><a href="admin.html"><i class='bx bxs-dashboard'></i> <span>Dashboard</span></a></li>
+                <li data-role="Administrador,Vendedor"><a href="pos.html" class="active"><i class='bx bx-cart-alt'></i> <span>Ventas (POS)</span></a></li>
+                <li data-role="Administrador,Almacén,Almacen"><a href="almacen.html"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
+            </ul>
+        </aside>
+        
+        <div class="main-content">
+            <header class="topbar">
+                <h2>Punto de Venta</h2>
+                <div class="user-chip">
+                    <i class='bx bx-user-circle' style="font-size: 1.25rem; color:var(--primary)"></i>
+                    <span id="userName">Vendedor</span>
+                    <button class="btn btn-ghost" onclick="logout()" style="padding: 4px 8px; margin-left:10px;" title="Cerrar sesión">
+                        <i class='bx bx-log-out'></i>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-body" style="padding: 1rem;">
+                <div class="pos-layout">
+                    <!-- Catálogo de Productos con Imágenes -->
+                    <div class="pos-catalog">
+                        <div class="form-group" style="position:relative; margin-bottom:10px;">
+                            <i class='bx bx-search' style="position:absolute; left:12px; top:12px; color:#94a3b8; font-size:1.2rem;"></i>
+                            <input type="text" id="searchProd" class="form-control" placeholder="Buscar producto por nombre o código de barras..." style="padding-left: 40px;">
+                        </div>
+                        <div class="pos-filters" id="catFilters">
+                            <button class="filter-chip active" data-cat="all">Todas</button>
+                        </div>
+                        <div class="pos-grid" id="prodGrid">
+                            <div class="empty-state" style="grid-column: 1/-1;"><i class='bx bx-loader-alt bx-spin'></i><p>Cargando catálogo...</p></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumen del Carrito de Venta -->
+                    <div class="pos-cart">
+                        <div class="cart-header">
+                            <span>Resumen de Venta</span>
+                            <span class="badge ok" id="cartCount">0 ítems</span>
+                        </div>
+                        <div class="cart-items" id="cartList">
+                            <div class="empty-state" style="padding: 2rem;"><i class='bx bx-cart'></i><p style="font-size:0.9rem; margin:0;">Carrito vacío</p></div>
+                        </div>
+                        <div class="cart-footer">
+                            <div class="cart-totals"><span>Total:</span> <span id="cartTotal">S/ 0.00</span></div>
+                            
+                            <!-- Selector de Cliente (RF11) -->
+                            <div class="cart-client-box" style="margin-bottom:12px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                    <span style="font-size:0.78rem; font-weight:600; color:#475569;"><i class='bx bx-user'></i> Cliente:</span>
+                                    <button type="button" class="btn btn-outline" style="padding:2px 8px; font-size:0.75rem;" onclick="abrirModalCliente()">
+                                        <i class='bx bx-user-plus'></i> Cambiar / Nuevo
+                                    </button>
+                                </div>
+                                <div id="selectedClientDisplay" style="font-size:0.85rem; font-weight:700; color:var(--dark);">
+                                    Cliente General (00000000)
+                                </div>
+                            </div>
+
+                            <p style="font-size:0.8rem; color:#64748b; margin: 0 0 10px; font-weight:600;">Método de Pago:</p>
+                            <div class="payment-methods" id="payMethods">
+                                <button class="pay-btn active" data-id="1"><i class='bx bx-money'></i> Efectivo</button>
+                                <button class="pay-btn" data-id="2"><i class='bx bx-credit-card'></i> Tarjeta</button>
+                                <button class="pay-btn" data-id="3"><i class='bx bx-qr-scan'></i> Yape/Plin</button>
+                            </div>
+                            <button class="btn btn-primary" style="width: 100%; padding:14px; font-size: 1.05rem;" id="btnCobrar" onclick="procesarVenta()" disabled>
+                                <i class='bx bx-check-shield'></i> Cobrar S/ 0.00
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Gestión de Clientes (RF11) -->
+    <div class="modal-overlay" id="modalCliente">
+        <div class="modal" style="max-width: 440px;">
+            <div class="modal-header">
+                <span>Seleccionar o Registrar Cliente</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalCliente')"></i>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size:0.8rem; font-weight:600; color:#64748b;">Buscar cliente por DNI, RUC o Nombre:</label>
+                <div style="display:flex; gap:6px; margin-top:4px;">
+                    <input type="text" id="inputBuscarCliente" class="form-control" placeholder="Ej. 72345678 o Juan">
+                    <button type="button" class="btn btn-outline" onclick="buscarClientesPOS()"><i class='bx bx-search'></i> Buscar</button>
+                </div>
+                <div id="listaResultadosClientes" style="max-height: 130px; overflow-y:auto; margin-top:6px; border:1px solid #e2e8f0; border-radius:6px; display:none; background:#fff;"></div>
+            </div>
+            
+            <div style="border-top:1px dashed #cbd5e1; padding-top:12px;">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--primary); margin-bottom:8px;">
+                    <i class='bx bx-plus-circle'></i> Registrar nuevo cliente:
+                </div>
+                <form id="formNuevoClientePOS">
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <label style="font-size:0.75rem;">Documento (DNI / RUC) *</label>
+                        <input type="text" id="cliNuevoDoc" class="form-control" placeholder="8 u 11 dígitos" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:8px;">
+                        <label style="font-size:0.75rem;">Nombre Completo o Razón Social *</label>
+                        <input type="text" id="cliNuevoNombre" class="form-control" placeholder="Ej. Ana Torres" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label style="font-size:0.75rem;">Teléfono / Contacto</label>
+                        <input type="text" id="cliNuevoContacto" class="form-control" placeholder="Ej. 987654321">
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="seleccionarClienteGeneral()">
+                            Cliente General
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;" id="btnGuardarCliPOS">
+                            <i class='bx bx-check'></i> Guardar y Usar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Comprobante (Sin emojis) -->
+    <div class="modal-overlay" id="modalComprobante">
+        <div class="modal" style="max-width: 360px;">
+            <div class="modal-header">
+                <span>Venta Exitosa</span>
+                <i class='bx bx-check-circle' style="color:var(--success); font-size: 1.6rem;"></i>
+            </div>
+            <div class="ticket" id="ticket-print">
+                <div class="ticket-brand">PETSHOP PRO</div>
+                <div class="ticket-sub">Comprobante de Venta Electrónica</div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-row"><span>Comprobante:</span> <b id="tkNum"></b></div>
+                <div class="ticket-row"><span>Fecha:</span> <span id="tkFecha"></span></div>
+                <div class="ticket-row"><span>Vendedor:</span> <span id="tkVend"></span></div>
+                <div class="ticket-row"><span>Cliente:</span> <span id="tkCliente" style="font-weight:600;"></span></div>
+                <div class="ticket-divider"></div>
+                <div id="tkDetalle"></div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-row" style="font-size:15px; font-weight:bold;"><span>TOTAL:</span> <span id="tkTotal"></span></div>
+                <div class="ticket-divider"></div>
+                <div style="text-align:center; font-size:12px; color:#475569;">Gracias por confiar en nuestros servicios veterinarios.</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="window.print()"><i class='bx bx-printer'></i> Imprimir</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="cerrarComprobante()"><i class='bx bx-plus'></i> Nueva Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageGalleryViewer" style="display: none;"></div>
+
+    <script src="js/viewer.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/pos.js"></script>
+</body>
+</html>

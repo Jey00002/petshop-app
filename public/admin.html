@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetShop Pro - Panel Administrativo</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon-badge"><i class='bx bxs-store-alt'></i></div>
+                <span>PetShop Pro</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li data-role="Administrador"><a href="admin.html" class="active"><i class='bx bxs-dashboard'></i> <span>Administración</span></a></li>
+                <li data-role="Administrador,Vendedor"><a href="pos.html"><i class='bx bx-cart-alt'></i> <span>Ventas (POS)</span></a></li>
+                <li data-role="Administrador,Almacén,Almacen"><a href="almacen.html"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
+            </ul>
+        </aside>
+        
+        <div class="main-content">
+            <header class="topbar">
+                <h2>Panel de Control y Administración</h2>
+                <div class="user-chip">
+                    <i class='bx bx-user-circle' style="font-size: 1.25rem; color:var(--primary)"></i>
+                    <span id="userName">Admin</span>
+                    <button class="btn btn-ghost" onclick="logout()" style="padding: 4px 8px; margin-left:10px;" title="Cerrar sesión">
+                        <i class='bx bx-log-out'></i>
+                    </button>
+                </div>
+            </header>
+            
+            <main class="main-body">
+                <!-- Barra de Pestañas Administrativas -->
+                <div class="admin-tabs-bar" style="display:flex; gap:10px; margin-bottom:1.5rem; border-bottom:2px solid #e2e8f0; padding-bottom:12px; overflow-x:auto;">
+                    <button class="btn btn-primary tab-btn" id="btnTabDashboard" onclick="switchAdminTab('tabDashboard')">
+                        <i class='bx bxs-dashboard'></i> Dashboard
+                    </button>
+                    <button class="btn btn-outline tab-btn" id="btnTabHistorial" onclick="switchAdminTab('tabHistorial')">
+                        <i class='bx bx-receipt'></i> Historial de Ventas
+                    </button>
+                    <button class="btn btn-outline tab-btn" id="btnTabUsuarios" onclick="switchAdminTab('tabUsuarios')">
+                        <i class='bx bx-user-pin'></i> Usuarios & Roles
+                    </button>
+                    <button class="btn btn-outline tab-btn" id="btnTabReportes" onclick="switchAdminTab('tabReportes')">
+                        <i class='bx bx-line-chart'></i> Reportes Diarios
+                    </button>
+                </div>
+
+                <!-- SECCIÓN 1: DASHBOARD PRINCIPAL -->
+                <div id="tabDashboard" class="admin-tab-content">
+                    <div class="stats">
+                        <div class="stat">
+                            <div class="stat-info"><h4>Ventas de Hoy</h4><div class="val" id="kpiVentas">0</div></div>
+                            <div class="stat-icon primary"><i class='bx bx-shopping-bag'></i></div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-info"><h4>Ingresos Hoy</h4><div class="val" id="kpiIngresos">S/ 0.00</div></div>
+                            <div class="stat-icon primary"><i class='bx bx-money'></i></div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-info"><h4>Productos Activos</h4><div class="val" id="kpiProductos">0</div></div>
+                            <div class="stat-icon accent"><i class='bx bx-package'></i></div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-info"><h4>Alertas Stock</h4><div class="val" style="color:var(--danger)" id="kpiAlertas">0</div></div>
+                            <div class="stat-icon danger"><i class='bx bx-error-circle'></i></div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="card">
+                            <div class="card-header"><h3><i class='bx bx-bar-chart-alt-2'></i> Ventas Últimos 7 Días</h3></div>
+                            <div class="chart-container"><canvas id="barChart"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><h3><i class='bx bx-pie-chart-alt-2'></i> Productos por Categoría</h3></div>
+                            <div class="chart-container"><canvas id="doughnutChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: HISTORIAL DE VENTAS (RF12, RF13) -->
+                <div id="tabHistorial" class="admin-tab-content" style="display:none;">
+                    <div class="card">
+                        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+                            <h3><i class='bx bx-receipt'></i> Historial Completo de Ventas</h3>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <input type="date" id="filtroFechaInicio" class="form-control" style="width:140px;">
+                                <span style="font-size:0.8rem; color:#64748b;">hasta</span>
+                                <input type="date" id="filtroFechaFin" class="form-control" style="width:140px;">
+                                <select id="filtroEstadoVenta" class="form-control" style="width:130px;">
+                                    <option value="">Todos</option>
+                                    <option value="confirmada">Confirmadas</option>
+                                    <option value="anulada">Anuladas</option>
+                                </select>
+                                <button class="btn btn-primary" onclick="cargarHistorialVentas()"><i class='bx bx-filter-alt'></i> Filtrar</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Comprobante</th>
+                                        <th>Fecha / Hora</th>
+                                        <th>Cliente</th>
+                                        <th>Vendedor</th>
+                                        <th>Método</th>
+                                        <th>Total</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaHistorialVentas">
+                                    <tr><td colspan="9" class="empty-state">Cargando historial...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: ADMINISTRACIÓN DE USUARIOS Y ROLES (RF14) -->
+                <div id="tabUsuarios" class="admin-tab-content" style="display:none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class='bx bx-user-check'></i> Gestión de Empleados y Permisos</h3>
+                            <button class="btn btn-primary" onclick="abrirModalNuevoUsuario()">
+                                <i class='bx bx-user-plus'></i> Nuevo Usuario
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Usuario</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Correo</th>
+                                        <th>Rol del Sistema</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaUsuarios">
+                                    <tr><td colspan="7" class="empty-state">Cargando personal...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 4: REPORTES DIARIOS Y EXPORTACIÓN (RF07) -->
+                <div id="tabReportes" class="admin-tab-content" style="display:none;">
+                    <div class="card" style="margin-bottom:1.5rem;">
+                        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3><i class='bx bx-file-blank'></i> Reporte de Ventas del Día</h3>
+                                <p style="font-size:0.8rem; color:#64748b; margin:0;" id="reporteFechaTxt"></p>
+                            </div>
+                            <button class="btn btn-primary" onclick="exportarReporteDiarioCSV()">
+                                <i class='bx bx-download'></i> Exportar a CSV / Excel
+                            </button>
+                        </div>
+                        <div style="padding: 1.5rem;">
+                            <div class="stats" style="margin-bottom:1.5rem;">
+                                <div class="stat">
+                                    <div class="stat-info"><h4>Transacciones Confirmadas</h4><div class="val" id="repCantVentas">0</div></div>
+                                    <div class="stat-icon primary"><i class='bx bx-check-double'></i></div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-info"><h4>Total Recaudado Hoy</h4><div class="val" id="repTotalIngresos">S/ 0.00</div></div>
+                                    <div class="stat-icon primary"><i class='bx bx-dollar'></i></div>
+                                </div>
+                            </div>
+                            
+                            <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-pie-chart'></i> Desglose por Método de Pago</h4>
+                            <div id="repMetodosPago" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:1.5rem;"></div>
+
+                            <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-trophy'></i> Top 5 Productos Más Vendidos Hoy</h4>
+                            <div class="table-responsive">
+                                <table>
+                                    <thead><tr><th>Producto</th><th>Unidades Vendidas</th><th>Subtotal Generado</th></tr></thead>
+                                    <tbody id="tablaTopProductos"><tr><td colspan="3" class="empty-state">Sin datos para hoy</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Detalle de Venta -->
+    <div class="modal-overlay" id="modalDetalleVenta">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <span>Detalle de Transacción</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalDetalleVenta')"></i>
+            </div>
+            <div id="infoVentaHeader" style="background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:10px; font-size:0.85rem;"></div>
+            <div class="table-responsive" style="max-height: 250px; overflow-y:auto;">
+                <table>
+                    <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
+                    <tbody id="tablaDetalleItems"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-weight:700; font-size:1.05rem;">
+                <span>Total Facturado:</span>
+                <span id="detalleTotalVal">S/ 0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Crear/Editar Usuario (RF14) -->
+    <div class="modal-overlay" id="modalUsuario">
+        <div class="modal" style="max-width: 440px;">
+            <div class="modal-header">
+                <span id="modalUsuarioTitulo">Registrar Nuevo Usuario</span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalUsuario')"></i>
+            </div>
+            <form id="formUsuario">
+                <input type="hidden" id="usrId">
+                <div class="form-group">
+                    <label for="usrUsuario">Nombre de Usuario (Login) *</label>
+                    <input type="text" id="usrUsuario" class="form-control" placeholder="Ej. caja02" required>
+                </div>
+                <div class="form-group">
+                    <label for="usrNombre">Nombre Completo *</label>
+                    <input type="text" id="usrNombre" class="form-control" placeholder="Ej. Pedro Ruiz" required>
+                </div>
+                <div class="form-group">
+                    <label for="usrEmail">Correo Electrónico (para recuperación)</label>
+                    <input type="email" id="usrEmail" class="form-control" placeholder="usuario@petshop.com">
+                </div>
+                <div class="form-group">
+                    <label for="usrRol">Rol del Sistema *</label>
+                    <select id="usrRol" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="usrPassword" id="lblUsrPassword">Contraseña (Mínimo 6 caracteres) *</label>
+                    <input type="password" id="usrPassword" class="form-control" placeholder="••••••••">
+                    <small id="usrPwdHelp" style="color:#64748b; font-size:0.75rem; display:none;">Dejar en blanco para conservar la contraseña actual.</small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;" id="btnGuardarUsuario">
+                    <i class='bx bx-save'></i> Guardar Usuario
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
