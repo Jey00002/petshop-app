@@ -224,10 +224,12 @@ window.cargarUsuarios = async () => {
                         <button class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="abrirModalEditarUsuario(${u.id_usuario}, '${u.usuario}', '${cleanName}', '${u.email || ''}', ${u.id_rol})">
                             <i class='bx bx-edit'></i> Editar
                         </button>
+                        ${u.usuario === 'admin' ? '' : `
                         <button class="btn btn-ghost" style="padding:4px 6px; font-size:0.75rem; color:${esActivo ? 'var(--danger)' : 'var(--success)'};" 
                                 onclick="cambiarEstadoUsuario(${u.id_usuario}, '${esActivo ? 'inactivo' : 'activo'}')">
                             <i class='bx ${esActivo ? 'bx-user-x' : 'bx-user-check'}'></i> ${esActivo ? 'Desactivar' : 'Activar'}
                         </button>
+                        `}
                     </div>
                 </td>
             </tr>`;

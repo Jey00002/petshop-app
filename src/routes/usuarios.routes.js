@@ -106,6 +106,12 @@ router.patch('/:id/estado', verifyToken, requireRole('Administrador'), async (re
         return res.status(400).json({ mensaje: 'No puedes desactivar tu propia cuenta en sesión.' });
     }
 
+    // Prevenir desactivación de la cuenta principal de administrador
+    const [target] = await pool.query('SELECT usuario FROM usuario WHERE id_usuario = ?', [id]);
+    if (target.length > 0 && target[0].usuario === 'admin' && estado === 'inactivo') {
+        return res.status(400).json({ mensaje: 'No se puede desactivar la cuenta principal de administrador.' });
+    }
+
     try {
         await pool.query('UPDATE usuario SET estado = ? WHERE id_usuario = ?', [estado, id]);
         res.json({ ok: true, mensaje: `Usuario marcado como ${estado}` });

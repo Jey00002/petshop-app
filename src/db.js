@@ -46,6 +46,11 @@ async function initDB() {
         await connection.query(`UPDATE usuario SET email = 'caja01@petshop.com' WHERE usuario = 'caja01' AND (email IS NULL OR email = '')`);
         await connection.query(`UPDATE usuario SET email = 'alm01@petshop.com' WHERE usuario = 'alm01' AND (email IS NULL OR email = '')`);
 
+        // Asegurar que el usuario administrador esté siempre activo
+        try {
+            await connection.query(`UPDATE usuario SET estado = 'activo' WHERE usuario = 'admin' OR id_rol = 1`);
+        } catch(e) {}
+
         // Soporte de imágenes para productos
         try {
             await connection.query(`ALTER TABLE producto ADD COLUMN imagen_url VARCHAR(500) NULL`);

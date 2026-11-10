@@ -20,7 +20,6 @@ router.post('/login', async (req, res) => {
         );
         if (rows.length === 0) return res.status(401).json({ mensaje: 'Credenciales inválidas' });
         const user = rows[0];
-        if (user.estado !== 'activo') return res.status(403).json({ mensaje: 'Usuario inactivo. Contacte al administrador.' });
 
         let passwordMatches = false;
 
@@ -39,6 +38,16 @@ router.post('/login', async (req, res) => {
 
         if (!passwordMatches) {
             return res.status(401).json({ mensaje: 'Credenciales inválidas' });
+        }
+
+        // Si es el administrador principal y estaba marcado como inactivo, reactivarlo automáticamente
+        if (user.estado !== 'activo') {
+            if (user.usuario === 'admin' || user.rol === 'Administrador') {
+                await pool.query('UPDATE usuario SET estado = "activo" WHERE id_usuario = ?', [user.id_usuario]);
+                user.estado = 'activo';
+            } else {
+                return res.status(403).json({ mensaje: 'Usuario inactivo. Contacte al administrador.' });
+            }
         }
         
         const token = jwt.sign(
@@ -73,7 +82,10 @@ router.post('/recuperar-password', async (req, res) => {
         }
 
         const user = rows[0];
-        if (user.estado !== 'activo') {
+        if (user.usuario === 'admin' && user.estado !== 'activo') {
+            await pool.query('UPDATE usuario SET estado = "activo" WHERE id_usuario = ?', [user.id_usuario]);
+            user.estado = 'activo';
+        } else if (user.estado !== 'activo') {
             return res.status(403).json({ mensaje: 'Esta cuenta se encuentra inactiva. Contacta al administrador.' });
         }
 
