@@ -109,11 +109,17 @@
                 <!-- Accesos rápidos para demostración / pruebas -->
                 <div class="demo-users-bar">
                     <div class="demo-users-title">
-                        <i class='bx bx-user-check'></i> Cuenta demo preconfigurada:
+                        <i class='bx bx-user-check'></i> Cuentas autorizadas para acceso rápido:
                     </div>
                     <div class="demo-chips-grid">
                         <button type="button" class="demo-chip" onclick="fillDemo('admin', 'admin123')">
                             Admin (admin123)
+                        </button>
+                        <button type="button" class="demo-chip" onclick="fillDemo('proveedor', 'proveedor123')">
+                            Proveedor (proveedor123)
+                        </button>
+                        <button type="button" class="demo-chip" onclick="fillDemo('caja01', 'caja123')">
+                            Cajero (caja123)
                         </button>
                     </div>
                 </div>
@@ -298,6 +304,8 @@
                         window.location.href = 'admin.html';
                     } else if (rolNorm === 'proveedor') {
                         window.location.href = 'almacen.html';
+                    } else if (rolNorm === 'vendedor' || rolNorm === 'cajero') {
+                        window.location.href = 'pos.html';
                     } else {
                         window.location.href = 'admin.html';
                     }

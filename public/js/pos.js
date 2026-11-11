@@ -54,6 +54,24 @@ async function verificarEstadoCaja(autoOpenModal = false) {
             }
 
             if (actions) {
+                const rolActual = (localStorage.getItem('rol') || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                const esCajero = rolActual === 'vendedor' || rolActual === 'cajero';
+
+                let btnCerrarHtml = '';
+                if (esCajero) {
+                    btnCerrarHtml = `
+                        <button type="button" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; padding:6px 12px; font-size:0.82rem; font-weight:700;" onclick="abrirModalCierre()" title="Cerrar turno y realizar arqueo">
+                            <i class='bx bx-archive-in'></i> Cerrar Caja
+                        </button>
+                    `;
+                } else {
+                    btnCerrarHtml = `
+                        <span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.75rem; padding:6px 10px; display:inline-flex; align-items:center; gap:4px;" title="Cierre exclusivo para el cajero">
+                            <i class='bx bx-shield-quarter'></i> Cierre exclusivo de Cajero
+                        </span>
+                    `;
+                }
+
                 actions.innerHTML = `
                     <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.78rem; font-weight:600;" onclick="abrirModalCorteParcial()" title="Arqueo X en vivo sin cerrar la caja">
                         <i class='bx bx-calculator'></i> Corte Parcial
@@ -61,9 +79,7 @@ async function verificarEstadoCaja(autoOpenModal = false) {
                     <button type="button" class="btn btn-outline" style="padding:6px 10px; font-size:0.78rem; font-weight:600;" onclick="abrirModalCierresDelDia()" title="Ver turnos y cierres del día">
                         <i class='bx bx-history'></i> Cierres del Día
                     </button>
-                    <button type="button" class="btn btn-outline" style="border-color:#ef4444; color:#ef4444; padding:6px 12px; font-size:0.82rem; font-weight:700;" onclick="abrirModalCierre()" title="Cerrar turno y realizar arqueo">
-                        <i class='bx bx-archive-in'></i> Cerrar Caja
-                    </button>
+                    ${btnCerrarHtml}
                 `;
             }
         } else {
@@ -134,6 +150,11 @@ document.getElementById('formAperturaCaja').addEventListener('submit', async (e)
 });
 
 window.abrirModalCierre = async () => {
+    const rolActual = (localStorage.getItem('rol') || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    if (rolActual !== 'vendedor' && rolActual !== 'cajero') {
+        showToast('Acceso no autorizado: Solo el cajero puede realizar el cierre de caja.', 'error');
+        return;
+    }
     try {
         const data = await fetchAPI('/caja/resumen');
         resumenCajaCache = data;

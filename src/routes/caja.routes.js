@@ -249,8 +249,21 @@ router.get('/corte-parcial', verifyToken, requireRole('Administrador', 'Vendedor
     }
 });
 
-// 5. Cierre y Arqueo de Caja (fin de turno durante el día)
-router.post(['/cerrar', '/cierre'], verifyToken, requireRole('Administrador', 'Vendedor'), async (req, res) => {
+// 5. Cierre y Arqueo de Caja (fin de turno: EXCLUSIVO para Cajero, ni admin ni proveedor)
+router.post(['/cerrar', '/cierre'], verifyToken, async (req, res) => {
+    const userRoleNorm = (req.user && req.user.rol ? req.user.rol : '')
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+    const esCajero = userRoleNorm === 'vendedor' || userRoleNorm === 'cajero';
+
+    if (!esCajero) {
+        return res.status(403).json({
+            success: false,
+            error: 'Acceso no autorizado: Solo el cajero puede realizar el cierre de caja. Administradores y proveedores no tienen permiso para cerrar caja.',
+            mensaje: 'Acceso no autorizado: Solo el cajero puede realizar el cierre de caja.'
+        });
+    }
+
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
