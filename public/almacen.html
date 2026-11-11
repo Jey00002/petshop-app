@@ -2,11 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PetShop Pro - Almacén e Inventario</title>
+    <meta name="theme-color" content="#0d5e5e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PetShop Pro">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/viewer.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css" media="(max-width: 768px)">
 </head>
 <body>
     <div class="layout">
@@ -18,7 +25,7 @@
             <ul class="sidebar-menu">
                 <li data-role="Administrador"><a href="admin.html"><i class='bx bxs-dashboard'></i> <span>Dashboard</span></a></li>
                 <li data-role="Administrador,Vendedor"><a href="pos.html"><i class='bx bx-cart-alt'></i> <span>Ventas (POS)</span></a></li>
-                <li data-role="Administrador,Almacén,Almacen"><a href="almacen.html" class="active"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
+                <li data-role="Administrador,Almacén,Almacen,Proveedor"><a href="almacen.html" class="active"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
             </ul>
         </aside>
         
@@ -312,8 +319,33 @@
 
     <div id="almacenViewerContainer" style="display: none;"></div>
 
+    <!-- Barra de Navegación Inferior para Móviles (PWA) -->
+    <nav class="mobile-bottom-nav">
+        <a href="admin.html" class="bottom-nav-item" data-role="Administrador">
+            <i class='bx bxs-dashboard'></i>
+            <span>Admin</span>
+        </a>
+        <a href="pos.html" class="bottom-nav-item" data-role="Administrador,Vendedor">
+            <i class='bx bx-cart-alt'></i>
+            <span>Ventas</span>
+        </a>
+        <a href="almacen.html" class="bottom-nav-item active" data-role="Administrador,Almacén,Almacen,Proveedor">
+            <i class='bx bx-box'></i>
+            <span>Inventario</span>
+        </a>
+        <a href="javascript:void(0)" onclick="logout()" class="bottom-nav-item">
+            <i class='bx bx-log-out'></i>
+            <span>Salir</span>
+        </a>
+    </nav>
+
     <script src="js/viewer.min.js"></script>
     <script src="js/api.js"></script>
     <script src="js/almacen.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
 </body>
 </html>

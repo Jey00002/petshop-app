@@ -1,0 +1,381 @@
+/* ==========================================================================
+   PetShop Pro - Mobile First & PWA Responsive Stylesheet (mobile.css)
+   Optimizado para Android / iOS con sensación de Aplicación Nativa
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Reglas Globales y Prevención de Comportamientos Web no Deseados
+   -------------------------------------------------------------------------- */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  overflow-x: hidden !important;
+  width: 100%;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+/* Prevenir selección accidental de texto en botones y elementos táctiles */
+button, 
+a, 
+.btn, 
+.demo-chip, 
+.badge, 
+.sidebar-menu a, 
+.bottom-nav-item, 
+.nav-tab, 
+.tab-btn {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. Inputs y Formularios al 100% de Ancho y Mínimo 44px (Anti Zoom)
+   -------------------------------------------------------------------------- */
+input, 
+textarea, 
+select, 
+.form-control {
+  font-size: 16px !important; /* Previene el molesto zoom automático en Safari y Android */
+  min-height: 44px;
+  width: 100%;
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-group {
+  width: 100%;
+  margin-bottom: 1.1rem;
+}
+
+.input-icon-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* --------------------------------------------------------------------------
+   3. Botones Grandes, Fáciles de Tocar (Mínimo 44px de Alto)
+   -------------------------------------------------------------------------- */
+button, 
+.btn {
+  min-height: 44px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s ease-out, opacity 0.15s ease;
+}
+
+/* Respuesta táctil instantánea tipo nativo (press feedback) */
+button:active, 
+.btn:active, 
+.demo-chip:active,
+.bottom-nav-item:active {
+  transform: scale(0.97);
+}
+
+/* --------------------------------------------------------------------------
+   4. Tablas Responsivas con Desplazamiento Horizontal Suave
+   -------------------------------------------------------------------------- */
+.table-responsive, 
+.table-wrap, 
+.table-container {
+  width: 100% !important;
+  max-width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.2rem;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* --------------------------------------------------------------------------
+   5. Barra de Navegación Inferior (Bottom Navigation Bar) en Móvil
+   -------------------------------------------------------------------------- */
+.mobile-bottom-nav {
+  display: none; /* Oculta en pantallas grandes de escritorio */
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: #0f172a;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    z-index: 9999;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.15);
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 0;
+    transition: color 0.15s ease;
+  }
+
+  .bottom-nav-item i {
+    font-size: 1.45rem;
+    margin-bottom: 2px;
+  }
+
+  .bottom-nav-item.active, 
+  .bottom-nav-item:hover {
+    color: #2dd4bf;
+  }
+
+  .bottom-nav-item.active i {
+    color: #2dd4bf;
+    transform: translateY(-1px);
+  }
+
+  /* ------------------------------------------------------------------------
+     6. Adaptación de Layouts en Pantallas Móviles (<= 768px)
+     ------------------------------------------------------------------------ */
+  .layout {
+    flex-direction: column !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  /* La barra lateral tradicional se oculta en móvil para dar paso al Bottom Bar */
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Sidebar móvil desplegable si se usa toggle */
+  .sidebar.mobile-open {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 270px;
+    z-index: 10000;
+    box-shadow: 10px 0 25px rgba(0, 0, 0, 0.3);
+  }
+
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 9999;
+  }
+
+  .sidebar-backdrop.active {
+    display: block;
+  }
+
+  /* Contenido principal con margen inferior para no quedar tapado por el Bottom Nav */
+  .main-content {
+    width: 100% !important;
+    height: 100dvh !important;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-y: auto !important;
+  }
+
+  .main-body {
+    padding: 1rem !important;
+    overflow-y: auto !important;
+  }
+
+  /* Topbar compacta en móvil */
+  .topbar {
+    padding: 0.75rem 1rem !important;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar h2 {
+    font-size: 1.05rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar .user-chip {
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  /* Botón hamburguesa móvil en el header */
+  .mobile-menu-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #f1f5f9;
+    border: 1px solid var(--border, #cbd5e1);
+    border-radius: 8px;
+    font-size: 1.5rem;
+    color: var(--dark, #0f172a);
+    cursor: pointer;
+    margin-right: 8px;
+  }
+
+  /* ------------------------------------------------------------------------
+     7. Vistas Específicas: Login Responsivo
+     ------------------------------------------------------------------------ */
+  body.login-body {
+    padding: 0.75rem !important;
+    align-items: flex-start !important;
+    min-height: 100dvh !important;
+  }
+
+  .login-wrapper {
+    flex-direction: column !important;
+    min-height: auto !important;
+    max-width: 100% !important;
+    margin-top: 10px;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  /* Panel de marca condensado en la parte superior del login en móvil */
+  .login-brand-panel {
+    padding: 1.5rem 1.25rem 1.25rem !important;
+  }
+
+  .brand-features-list {
+    display: none !important; /* Ocultar viñetas extensas en pantallas pequeñas */
+  }
+
+  .brand-footer-note {
+    display: none !important;
+  }
+
+  .login-form-panel {
+    padding: 1.5rem 1.25rem !important;
+  }
+
+  .demo-chips-grid {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .demo-chip {
+    width: 100% !important;
+    text-align: center;
+    padding: 12px !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     8. Vistas Específicas: POS (Punto de Venta) Móvil
+     ------------------------------------------------------------------------ */
+  .pos-grid-layout, 
+  .pos-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px;
+  }
+
+  .pos-products-col, 
+  .pos-cart-col {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas compactas en móvil */
+    gap: 10px !important;
+  }
+
+  .product-card {
+    padding: 10px !important;
+  }
+
+  .product-card img {
+    height: 100px !important;
+    object-fit: cover;
+  }
+
+  /* ------------------------------------------------------------------------
+     9. Grids de Estadísticas y Filtros en Móvil
+     ------------------------------------------------------------------------ */
+  .stats {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .stat {
+    padding: 1rem !important;
+  }
+
+  .filters-bar, 
+  .search-bar, 
+  .action-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .filters-bar > *, 
+  .search-bar > *, 
+  .action-bar > * {
+    width: 100% !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     10. Modales en Móvil (Full-Width o Bottom-Sheet)
+     ------------------------------------------------------------------------ */
+  .modal-content {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 10px auto !important;
+    padding: 1.25rem !important;
+    border-radius: 16px !important;
+    max-height: 90dvh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* Selector para ocultar botón hamburguesa en escritorio */
+@media (min-width: 769px) {
+  .mobile-menu-btn {
+    display: none !important;
+  }
+}

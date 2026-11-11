@@ -1,4 +1,4 @@
-checkAuth(['Administrador', 'Almacén', 'Almacen']);
+checkAuth(['Administrador', 'Almacén', 'Almacen', 'Proveedor']);
 
 let allProducts = [];
 let categoriasList = [];

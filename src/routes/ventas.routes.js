@@ -4,16 +4,31 @@ const pool = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
 
-// Listar ventas con información consolidada (RF12, RF13)
+// Listar métodos de pago disponibles (Efectivo, Tarjeta, Yape)
+router.get('/metodos-pago', async (req, res) => {
+    try {
+        const [metodos] = await pool.query('SELECT id_metodo, nombre FROM metodo_pago ORDER BY id_metodo ASC');
+        res.json(metodos);
+    } catch(e) {
+        console.error('Error al consultar métodos de pago:', e);
+        res.status(500).json({ mensaje: 'Error al obtener métodos de pago' });
+    }
+});
+
+// Listar ventas con información consolidada e IGV 18% (RF12, RF13)
 router.get('/', verifyToken, requireRole('Administrador', 'Vendedor'), async (req, res) => {
     try {
         const { fecha_inicio, fecha_fin, estado } = req.query;
         let query = `
-            SELECT v.id_venta, v.fecha_hora, v.total, v.estado,
+            SELECT v.id_venta, v.fecha_hora,
+                   COALESCE(v.subtotal, ROUND(v.total / 1.18, 2)) as subtotal,
+                   COALESCE(v.igv, ROUND(v.total - ROUND(v.total / 1.18, 2), 2)) as igv,
+                   v.total, v.estado,
                    u.nombre as nombre_vendedor,
                    COALESCE(c.nombre, 'Cliente General') as nombre_cliente,
                    COALESCE(c.documento, '-') as documento_cliente,
-                   m.nombre as metodo_pago,
+                   COALESCE(m.nombre, 'Efectivo') as metodo_pago,
+                   v.id_metodo,
                    cp.serie, cp.numero as numero_comprobante
             FROM venta v
             JOIN usuario u ON v.id_usuario = u.id_usuario
@@ -45,16 +60,20 @@ router.get('/', verifyToken, requireRole('Administrador', 'Vendedor'), async (re
     }
 });
 
-// Obtener detalle de una venta específica (RF12, RF13)
+// Obtener detalle de una venta específica con desglose tributario (RF12, RF13)
 router.get('/:id', verifyToken, requireRole('Administrador', 'Vendedor'), async (req, res) => {
     const { id } = req.params;
     try {
         const [ventas] = await pool.query(`
-            SELECT v.id_venta, v.fecha_hora, v.total, v.estado,
+            SELECT v.id_venta, v.fecha_hora,
+                   COALESCE(v.subtotal, ROUND(v.total / 1.18, 2)) as subtotal,
+                   COALESCE(v.igv, ROUND(v.total - ROUND(v.total / 1.18, 2), 2)) as igv,
+                   v.total, v.estado,
                    u.nombre as nombre_vendedor,
                    COALESCE(c.nombre, 'Cliente General') as nombre_cliente,
                    COALESCE(c.documento, '-') as documento_cliente,
-                   m.nombre as metodo_pago,
+                   COALESCE(m.nombre, 'Efectivo') as metodo_pago,
+                   v.id_metodo,
                    cp.serie, cp.numero as numero_comprobante
             FROM venta v
             JOIN usuario u ON v.id_usuario = u.id_usuario
@@ -85,7 +104,7 @@ router.get('/:id', verifyToken, requireRole('Administrador', 'Vendedor'), async 
     }
 });
 
-// Registrar venta con validaciones estrictas y transaccionalidad ACID (RF05, RF06, RNF07)
+// Registrar venta con validaciones estrictas, desglose de IGV (18%) y transaccionalidad ACID (RF05, RF06, RNF07)
 router.post('/', verifyToken, requireRole('Administrador', 'Vendedor'), async (req, res) => {
     const { id_cliente, id_metodo, detalles } = req.body; // detalles: [{id_producto, cantidad, precio_unitario}]
     
@@ -115,11 +134,45 @@ router.post('/', verifyToken, requireRole('Administrador', 'Vendedor'), async (r
         const clienteId = id_cliente ? parseInt(id_cliente) : 1;
         const metodoId = id_metodo ? parseInt(id_metodo) : 1;
 
+        // Validar apertura de caja obligatoria para el vendedor
+        const [cajasAbiertas] = await connection.query(`
+            SELECT id_caja FROM caja 
+            WHERE estado = 'abierta' AND (id_usuario = ? OR 1=1)
+            ORDER BY CASE WHEN id_usuario = ? THEN 0 ELSE 1 END, id_caja DESC
+            LIMIT 1
+        `, [req.user.id_usuario, req.user.id_usuario]);
+
+        if (cajasAbiertas.length === 0) {
+            throw new Error('La caja se encuentra cerrada. Debe realizar la apertura de caja para registrar ventas.');
+        }
+        const idCajaActual = cajasAbiertas[0].id_caja;
+
+        // Cálculo riguroso de IGV del 18% (Base Imponible / Subtotal + IGV = Total)
+        const totalNum = parseFloat(total.toFixed(2));
+        const subtotalNum = parseFloat((totalNum / 1.18).toFixed(2));
+        const igvNum = parseFloat((totalNum - subtotalNum).toFixed(2));
+
         const [resVenta] = await connection.query(
-            `INSERT INTO venta (fecha_hora, total, estado, id_usuario, id_cliente, id_metodo) VALUES (NOW(), ?, 'confirmada', ?, ?, ?)`,
-            [total, req.user.id_usuario, clienteId, metodoId]
+            `INSERT INTO venta (fecha_hora, subtotal, igv, total, estado, id_usuario, id_cliente, id_metodo, id_caja) VALUES (NOW(), ?, ?, ?, 'confirmada', ?, ?, ?, ?)`,
+            [subtotalNum, igvNum, totalNum, req.user.id_usuario, clienteId, metodoId, idCajaActual]
         );
         const id_venta = resVenta.insertId;
+
+        // Actualizar totales acumulados de la caja abierta según método de pago
+        let colMetodo = 'total_ventas_efectivo = total_ventas_efectivo + ?, total_efectivo = total_efectivo + ?';
+        if (metodoId === 2) {
+            colMetodo = 'total_ventas_tarjeta = total_ventas_tarjeta + ?, total_tarjeta = total_tarjeta + ?';
+        } else if (metodoId === 3) {
+            colMetodo = 'total_ventas_yape = total_ventas_yape + ?, total_yape_plin = total_yape_plin + ?';
+        }
+
+        await connection.query(`
+            UPDATE caja SET 
+                total_ventas = total_ventas + ?,
+                cantidad_ventas = cantidad_ventas + 1,
+                ${colMetodo}
+            WHERE id_caja = ?
+        `, [totalNum, totalNum, totalNum, idCajaActual]);
 
         for (let item of detalles) {
             const cant = parseInt(item.cantidad);
@@ -149,11 +202,23 @@ router.post('/', verifyToken, requireRole('Administrador', 'Vendedor'), async (r
         const numComp = `001-${String(id_venta).padStart(6, '0')}`;
         await connection.query(`INSERT INTO comprobante (serie, numero, id_venta) VALUES ('F001', ?, ?)`, [numComp, id_venta]);
 
+        // Nombre del método de pago
+        const [metodoRow] = await connection.query(`SELECT nombre FROM metodo_pago WHERE id_metodo = ?`, [metodoId]);
+        const nombreMetodo = metodoRow[0] ? metodoRow[0].nombre : 'Efectivo';
+
         await connection.commit();
-        res.status(201).json({ mensaje: 'Venta registrada con éxito', id_venta, comprobante: numComp });
+        res.status(201).json({ 
+            mensaje: 'Venta registrada con éxito', 
+            id_venta, 
+            comprobante: numComp,
+            subtotal: subtotalNum,
+            igv: igvNum,
+            total: totalNum,
+            metodo_pago: nombreMetodo
+        });
     } catch (e) {
         await connection.rollback();
-        if (e.message.includes('Stock insuficiente') || e.message.includes('Cantidad inválida')) {
+        if (e.message.includes('Stock insuficiente') || e.message.includes('Cantidad inválida') || e.message.includes('caja se encuentra cerrada')) {
             return res.status(400).json({ mensaje: e.message });
         }
         res.status(500).json({ mensaje: 'Error al procesar la venta', error: e.message });

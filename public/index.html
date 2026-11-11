@@ -2,10 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PetShop Pro - Acceso al Sistema</title>
+    <meta name="theme-color" content="#0d5e5e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PetShop Pro">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css" media="(max-width: 768px)">
 </head>
 <body class="login-body">
     <div class="login-wrapper">
@@ -96,22 +103,17 @@
                     <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 0.95rem;" id="btnSubmit">
                         <span>Iniciar Sesión</span> <i class='bx bx-right-arrow-alt' style="font-size: 1.2rem;"></i>
                     </button>
+                    <div id="loginErrorMsg" style="display:none; color:#ef4444; font-size:0.85rem; font-weight:600; text-align:center; margin-top:10px; padding:8px 12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;"></div>
                 </form>
 
                 <!-- Accesos rápidos para demostración / pruebas -->
                 <div class="demo-users-bar">
                     <div class="demo-users-title">
-                        <i class='bx bx-user-check'></i> Cuentas demo preconfiguradas:
+                        <i class='bx bx-user-check'></i> Cuenta demo preconfigurada:
                     </div>
                     <div class="demo-chips-grid">
                         <button type="button" class="demo-chip" onclick="fillDemo('admin', 'admin123')">
                             Admin (admin123)
-                        </button>
-                        <button type="button" class="demo-chip" onclick="fillDemo('caja01', 'caja123')">
-                            Vendedor (caja123)
-                        </button>
-                        <button type="button" class="demo-chip" onclick="fillDemo('alm01', 'alm123')">
-                            Almacén (alm123)
                         </button>
                     </div>
                 </div>
@@ -257,6 +259,12 @@
             const contrasena = document.getElementById('contrasena').value;
             const recordar = document.getElementById('chkRecordar').checked;
 
+            const errBox = document.getElementById('loginErrorMsg');
+            if (errBox) {
+                errBox.style.display = 'none';
+                errBox.textContent = '';
+            }
+
             try {
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -264,7 +272,14 @@
                     body: JSON.stringify({ usuario, contrasena })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.mensaje || data.error);
+                if (!res.ok) {
+                    const errorMsg = data.error || data.mensaje || 'Credenciales inválidas';
+                    if (res.status === 403 && errBox) {
+                        errBox.textContent = errorMsg;
+                        errBox.style.display = 'block';
+                    }
+                    throw new Error(errorMsg);
+                }
 
                 if (recordar) {
                     localStorage.setItem('remembered_user', usuario);
@@ -278,10 +293,14 @@
 
                 showToast(`¡Bienvenido, ${data.nombre}!`, 'success');
                 setTimeout(() => {
-                    if (data.rol === 'Administrador') window.location.href = 'admin.html';
-                    else if (data.rol === 'Vendedor') window.location.href = 'pos.html';
-                    else if (data.rol === 'Almacén' || data.rol === 'Almacen') window.location.href = 'almacen.html';
-                    else window.location.href = 'admin.html';
+                    const rolNorm = (data.rol || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                    if (rolNorm === 'administrador' || rolNorm === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else if (rolNorm === 'proveedor') {
+                        window.location.href = 'almacen.html';
+                    } else {
+                        window.location.href = 'admin.html';
+                    }
                 }, 400);
             } catch (error) {
                 showToast(error.message, 'error');
@@ -383,6 +402,15 @@
                 btn.disabled = false;
             }
         });
+
+        // Registro de Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('PWA Service Worker registrado:', reg.scope))
+                    .catch(err => console.warn('Error al registrar Service Worker:', err));
+            });
+        }
     </script>
 </body>
 </html>

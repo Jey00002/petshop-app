@@ -4,7 +4,7 @@ const pool = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const { requireRole } = require('../middleware/roles');
 
-router.post('/entradas', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.post('/entradas', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id_producto, cantidad, motivo } = req.body;
     const connection = await pool.getConnection();
     try {
@@ -27,7 +27,7 @@ router.post('/entradas', verifyToken, requireRole('Administrador', 'Almacén'), 
     }
 });
 
-router.get('/alertas', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.get('/alertas', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     try {
         const [rows] = await pool.query(`SELECT a.*, p.nombre FROM alerta_stock a JOIN producto p ON a.id_producto = p.id_producto WHERE a.estado = 'activa'`);
         res.json(rows);

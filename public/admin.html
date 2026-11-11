@@ -2,11 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PetShop Pro - Panel Administrativo</title>
+    <meta name="theme-color" content="#0d5e5e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PetShop Pro">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css" media="(max-width: 768px)">
 </head>
 <body>
     <div class="layout">
@@ -47,7 +54,10 @@
                         <i class='bx bx-user-pin'></i> Usuarios & Roles
                     </button>
                     <button class="btn btn-outline tab-btn" id="btnTabReportes" onclick="switchAdminTab('tabReportes')">
-                        <i class='bx bx-line-chart'></i> Reportes Diarios
+                        <i class='bx bx-line-chart'></i> Reportes de Ventas
+                    </button>
+                    <button class="btn btn-outline tab-btn" id="btnTabCajas" onclick="switchAdminTab('tabCajas')">
+                        <i class='bx bx-archive-in'></i> Control de Cajas
                     </button>
                 </div>
 
@@ -111,13 +121,15 @@
                                         <th>Cliente</th>
                                         <th>Vendedor</th>
                                         <th>Método</th>
+                                        <th>Subtotal</th>
+                                        <th>IGV (18%)</th>
                                         <th>Total</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tablaHistorialVentas">
-                                    <tr><td colspan="9" class="empty-state">Cargando historial...</td></tr>
+                                    <tr><td colspan="11" class="empty-state">Cargando historial...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -154,40 +166,254 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN 4: REPORTES DIARIOS Y EXPORTACIÓN (RF07) -->
+                <!-- SECCIÓN 4: REPORTES DIARIOS, SEMANALES Y EXPORTACIÓN (RF07) -->
                 <div id="tabReportes" class="admin-tab-content" style="display:none;">
-                    <div class="card" style="margin-bottom:1.5rem;">
-                        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
-                            <div>
-                                <h3><i class='bx bx-file-blank'></i> Reporte de Ventas del Día</h3>
-                                <p style="font-size:0.8rem; color:#64748b; margin:0;" id="reporteFechaTxt"></p>
-                            </div>
-                            <button class="btn btn-primary" onclick="exportarReporteDiarioCSV()">
-                                <i class='bx bx-download'></i> Exportar a CSV / Excel
+                    <!-- Selector de Sub-reporte: Diario vs Semanal -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; flex-wrap:wrap; gap:10px;">
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" id="btnSubReporteDiario" onclick="switchReportSubTab('diario')">
+                                <i class='bx bx-calendar'></i> Reporte Diario
+                            </button>
+                            <button class="btn btn-outline" id="btnSubReporteSemanal" onclick="switchReportSubTab('semanal')">
+                                <i class='bx bx-calendar-week'></i> Reporte Semanal
                             </button>
                         </div>
-                        <div style="padding: 1.5rem;">
-                            <div class="stats" style="margin-bottom:1.5rem;">
-                                <div class="stat">
-                                    <div class="stat-info"><h4>Transacciones Confirmadas</h4><div class="val" id="repCantVentas">0</div></div>
-                                    <div class="stat-icon primary"><i class='bx bx-check-double'></i></div>
-                                </div>
-                                <div class="stat">
-                                    <div class="stat-info"><h4>Total Recaudado Hoy</h4><div class="val" id="repTotalIngresos">S/ 0.00</div></div>
-                                    <div class="stat-icon primary"><i class='bx bx-dollar'></i></div>
-                                </div>
-                            </div>
-                            
-                            <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-pie-chart'></i> Desglose por Método de Pago</h4>
-                            <div id="repMetodosPago" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:1.5rem;"></div>
+                    </div>
 
-                            <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-trophy'></i> Top 5 Productos Más Vendidos Hoy</h4>
-                            <div class="table-responsive">
-                                <table>
-                                    <thead><tr><th>Producto</th><th>Unidades Vendidas</th><th>Subtotal Generado</th></tr></thead>
-                                    <tbody id="tablaTopProductos"><tr><td colspan="3" class="empty-state">Sin datos para hoy</td></tr></tbody>
-                                </table>
+                    <!-- SUB-REPORTE 1: REPORTE DIARIO -->
+                    <div id="subReporteDiario">
+                        <div class="card" style="margin-bottom:1.5rem;">
+                            <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+                                <div>
+                                    <h3><i class='bx bx-calendar-check'></i> Reporte de Ventas Diario</h3>
+                                    <p style="font-size:0.8rem; color:#64748b; margin:0;" id="reporteFechaTxt"></p>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <input type="date" id="repDiarioFecha" class="form-control" style="width:145px;">
+                                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem;" onclick="setReporteDiarioHoy()">
+                                        <i class='bx bx-time'></i> Hoy
+                                    </button>
+                                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem;" onclick="cargarReporteDiario()">
+                                        <i class='bx bx-sync'></i> Sincronizar
+                                    </button>
+                                    <button class="btn btn-primary" onclick="exportarReporteDiarioCSV()">
+                                        <i class='bx bx-download'></i> Exportar CSV
+                                    </button>
+                                </div>
                             </div>
+                            <div style="padding: 1.5rem;">
+                                <!-- KPIs Diarios con IGV 18% -->
+                                <div class="stats" style="margin-bottom:1.5rem;">
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Transacciones Confirmadas</h4><div class="val" id="repCantVentas">0</div></div>
+                                        <div class="stat-icon primary"><i class='bx bx-check-double'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Base Imponible (Subtotal)</h4><div class="val" id="repSubtotalDiario">S/ 0.00</div></div>
+                                        <div class="stat-icon accent"><i class='bx bx-calculator'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>I.G.V. Recaudado (18%)</h4><div class="val" id="repIgvDiario">S/ 0.00</div></div>
+                                        <div class="stat-icon warning"><i class='bx bx-receipt'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Total Recaudado Hoy</h4><div class="val" id="repTotalIngresos">S/ 0.00</div></div>
+                                        <div class="stat-icon primary"><i class='bx bx-dollar'></i></div>
+                                    </div>
+                                </div>
+                                
+                                <h4 style="margin: 0 0 12px; color:var(--dark); display:flex; align-items:center; gap:6px;">
+                                    <i class='bx bx-credit-card-front' style="color:var(--primary)"></i> 
+                                    Desglose por Método de Pago (Efectivo, Tarjeta, Yape) con IGV 18%
+                                </h4>
+                                <div id="repMetodosPago" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-bottom:1.5rem;"></div>
+
+                                <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-trophy' style="color:var(--accent)"></i> Top 5 Productos Más Vendidos</h4>
+                                <div class="table-responsive" style="margin-bottom:1.5rem;">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th>Unidades Vendidas</th>
+                                                <th>Base Gravada</th>
+                                                <th>IGV (18%)</th>
+                                                <th>Total Recaudado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaTopProductos"><tr><td colspan="5" class="empty-state">Sin ventas para la fecha</td></tr></tbody>
+                                    </table>
+                                </div>
+
+                                <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-list-ul'></i> Detalle de Ventas del Día</h4>
+                                <div class="table-responsive">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Comprobante</th>
+                                                <th>Hora</th>
+                                                <th>Cliente</th>
+                                                <th>Vendedor</th>
+                                                <th>Método de Pago</th>
+                                                <th>Subtotal</th>
+                                                <th>IGV (18%)</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaVentasDia"><tr><td colspan="8" class="empty-state">Sin registros</td></tr></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB-REPORTE 2: REPORTE SEMANAL -->
+                    <div id="subReporteSemanal" style="display:none;">
+                        <div class="card" style="margin-bottom:1.5rem;">
+                            <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+                                <div>
+                                    <h3><i class='bx bx-calendar-week'></i> Reporte de Ventas Semanal</h3>
+                                    <p style="font-size:0.8rem; color:#64748b; margin:0;" id="repSemanaRangoTxt">Consolidado Lunes a Domingo</p>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                    <label style="font-size:0.8rem; color:#64748b;">Semana de:</label>
+                                    <input type="date" id="repSemanalFecha" class="form-control" style="width:145px;">
+                                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem;" onclick="setReporteSemanalActual()">
+                                        <i class='bx bx-time'></i> Esta Semana
+                                    </button>
+                                    <button class="btn btn-outline" style="padding:6px 12px; font-size:0.82rem;" onclick="cargarReporteSemanal()">
+                                        <i class='bx bx-sync'></i> Sincronizar
+                                    </button>
+                                    <button class="btn btn-primary" onclick="exportarReporteSemanalCSV()">
+                                        <i class='bx bx-download'></i> Exportar CSV
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="padding: 1.5rem;">
+                                <!-- KPIs Semanales con IGV 18% -->
+                                <div class="stats" style="margin-bottom:1.5rem;">
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Ventas de la Semana</h4><div class="val" id="repSemanaCantVentas">0</div></div>
+                                        <div class="stat-icon primary"><i class='bx bx-shopping-bag'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Subtotal Semanal (Base)</h4><div class="val" id="repSemanaSubtotal">S/ 0.00</div></div>
+                                        <div class="stat-icon accent"><i class='bx bx-calculator'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>IGV Semanal (18%)</h4><div class="val" id="repSemanaIgv">S/ 0.00</div></div>
+                                        <div class="stat-icon warning"><i class='bx bx-receipt'></i></div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="stat-info"><h4>Total Semanal Recaudado</h4><div class="val" id="repSemanaTotal">S/ 0.00</div></div>
+                                        <div class="stat-icon primary"><i class='bx bx-dollar'></i></div>
+                                    </div>
+                                </div>
+
+                                <!-- Gráfico de Tendencia Semanal -->
+                                <div class="card" style="margin-bottom:1.5rem; border:1px solid #e2e8f0;">
+                                    <div class="card-header"><h4><i class='bx bx-bar-chart-alt'></i> Evolución de Ventas Diarias (Lunes a Domingo)</h4></div>
+                                    <div class="chart-container" style="height:260px;"><canvas id="semanalChart"></canvas></div>
+                                </div>
+
+                                <!-- Tabla de Desglose Diario de la Semana -->
+                                <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-calendar'></i> Rendimiento Día por Día</h4>
+                                <div class="table-responsive" style="margin-bottom:1.5rem;">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Día</th>
+                                                <th>Fecha</th>
+                                                <th>Transacciones</th>
+                                                <th>Base Imponible</th>
+                                                <th>IGV (18%)</th>
+                                                <th>Total Recaudado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaDesgloseDiasSemana"><tr><td colspan="6" class="empty-state">Sin datos de la semana</td></tr></tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Desglose Semanal por Métodos de Pago -->
+                                <h4 style="margin: 0 0 12px; color:var(--dark); display:flex; align-items:center; gap:6px;">
+                                    <i class='bx bx-credit-card-front' style="color:var(--primary)"></i> 
+                                    Desglose Semanal por Método de Pago (Efectivo, Tarjeta, Yape) con IGV 18%
+                                </h4>
+                                <div id="repSemanaMetodosPago" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:12px; margin-bottom:1.5rem;"></div>
+
+                                <!-- Top Productos de la Semana -->
+                                <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-trophy' style="color:var(--accent)"></i> Top Productos de la Semana</h4>
+                                <div class="table-responsive" style="margin-bottom:1.5rem;">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th>Unidades Vendidas</th>
+                                                <th>Base Gravada</th>
+                                                <th>IGV (18%)</th>
+                                                <th>Total Recaudado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaSemanaTopProductos"><tr><td colspan="5" class="empty-state">Sin ventas para la semana</td></tr></tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Detalle de Ventas de la Semana -->
+                                <h4 style="margin: 0 0 10px; color:var(--dark);"><i class='bx bx-list-ul'></i> Todas las Ventas de la Semana</h4>
+                                <div class="table-responsive">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Comprobante</th>
+                                                <th>Fecha / Hora</th>
+                                                <th>Cliente</th>
+                                                <th>Vendedor</th>
+                                                <th>Método de Pago</th>
+                                                <th>Subtotal</th>
+                                                <th>IGV (18%)</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaSemanaVentas"><tr><td colspan="8" class="empty-state">Sin registros en la semana</td></tr></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 5: CONTROL DE CAJAS Y ARQUEOS -->
+                <div id="tabCajas" class="admin-tab-content" style="display:none;">
+                    <div class="card">
+                        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+                            <div>
+                                <h3><i class='bx bx-archive-in'></i> Historial de Cajas y Arqueos de Turno</h3>
+                                <p style="font-size:0.8rem; color:#64748b; margin:0;">Registro de aperturas, cierres, fondos iniciales y diferencias de cuadre</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="cargarHistorialCajas()">
+                                <i class='bx bx-sync'></i> Actualizar
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID Turno</th>
+                                        <th>Cajero</th>
+                                        <th>Fecha Apertura</th>
+                                        <th>Fecha Cierre</th>
+                                        <th>Fondo Inicial</th>
+                                        <th>Ventas Efectivo</th>
+                                        <th>Esperado</th>
+                                        <th>Real Contado</th>
+                                        <th>Diferencia</th>
+                                        <th>Estado</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablaHistorialCajas">
+                                    <tr><td colspan="11" class="empty-state">Cargando turnos de caja...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -209,9 +435,19 @@
                     <tbody id="tablaDetalleItems"></tbody>
                 </table>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-weight:700; font-size:1.05rem;">
-                <span>Total Facturado:</span>
-                <span id="detalleTotalVal">S/ 0.00</span>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-top:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#64748b; margin-bottom:4px;">
+                    <span>Op. Gravada (Subtotal):</span>
+                    <span id="detalleSubtotalVal" style="font-weight:600; color:#334155;">S/ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#64748b; margin-bottom:6px;">
+                    <span>I.G.V. (18%):</span>
+                    <span id="detalleIgvVal" style="font-weight:600; color:#334155;">S/ 0.00</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed #cbd5e1; padding-top:6px; font-weight:700; font-size:1.05rem;">
+                    <span>Total Facturado:</span>
+                    <span id="detalleTotalVal" style="color:var(--primary);">S/ 0.00</span>
+                </div>
             </div>
         </div>
     </div>
@@ -253,7 +489,32 @@
         </div>
     </div>
 
+    <!-- Barra de Navegación Inferior para Móviles (PWA) -->
+    <nav class="mobile-bottom-nav">
+        <a href="admin.html" class="bottom-nav-item active" data-role="Administrador">
+            <i class='bx bxs-dashboard'></i>
+            <span>Admin</span>
+        </a>
+        <a href="pos.html" class="bottom-nav-item" data-role="Administrador,Vendedor">
+            <i class='bx bx-cart-alt'></i>
+            <span>Ventas</span>
+        </a>
+        <a href="almacen.html" class="bottom-nav-item" data-role="Administrador,Almacén,Almacen,Proveedor">
+            <i class='bx bx-box'></i>
+            <span>Inventario</span>
+        </a>
+        <a href="javascript:void(0)" onclick="logout()" class="bottom-nav-item">
+            <i class='bx bx-log-out'></i>
+            <span>Salir</span>
+        </a>
+    </nav>
+
     <script src="js/api.js"></script>
     <script src="js/admin.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
 </body>
 </html>

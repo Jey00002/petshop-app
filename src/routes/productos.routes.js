@@ -36,7 +36,7 @@ router.get('/categorias', verifyToken, async (req, res) => {
 });
 
 // Crear nueva categoría
-router.post('/categorias', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.post('/categorias', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { nombre_categoria } = req.body;
     if (!nombre_categoria || !nombre_categoria.trim()) {
         return res.status(400).json({ mensaje: 'El nombre de la categoría es obligatorio' });
@@ -71,7 +71,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // Actualizar imagen del producto
-router.put('/:id/imagen', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.put('/:id/imagen', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id } = req.params;
     const { imagen_url } = req.body;
     try {
@@ -83,7 +83,7 @@ router.put('/:id/imagen', verifyToken, requireRole('Administrador', 'Almacén'),
 });
 
 // Crear nuevo producto (RF02)
-router.post('/', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.post('/', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { nombre, descripcion, precio, stock, stock_minimo, id_categoria, id_proveedor, codigo_barras, imagen_url, nueva_categoria } = req.body;
     
     if (!nombre || !nombre.trim()) {
@@ -153,7 +153,7 @@ router.post('/', verifyToken, requireRole('Administrador', 'Almacén'), async (r
 });
 
 // Modificar producto existente (RF03)
-router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id } = req.params;
     const { nombre, descripcion, precio, stock_minimo, id_categoria, id_proveedor, codigo_barras, imagen_url } = req.body;
 
@@ -196,7 +196,7 @@ router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén'), async 
 });
 
 // Desactivar / Activar producto (RF03)
-router.patch('/:id/estado', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.patch('/:id/estado', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
     if (!['activo', 'inactivo'].includes(estado)) {

@@ -22,7 +22,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // Registrar nuevo proveedor
-router.post('/', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.post('/', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { nombre, contacto, telefono } = req.body;
     if (!nombre || !nombre.trim()) {
         return res.status(400).json({ mensaje: 'El nombre del proveedor es obligatorio.' });
@@ -46,7 +46,7 @@ router.post('/', verifyToken, requireRole('Administrador', 'Almacén'), async (r
 });
 
 // Actualizar proveedor
-router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id } = req.params;
     const { nombre, contacto, telefono } = req.body;
     if (!nombre || !nombre.trim()) {
@@ -65,7 +65,7 @@ router.put('/:id', verifyToken, requireRole('Administrador', 'Almacén'), async 
 });
 
 // Cambiar estado activo / inactivo
-router.patch('/:id/estado', verifyToken, requireRole('Administrador', 'Almacén'), async (req, res) => {
+router.patch('/:id/estado', verifyToken, requireRole('Administrador', 'Almacén', 'Proveedor'), async (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
     if (!['activo', 'inactivo'].includes(estado)) {

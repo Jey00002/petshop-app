@@ -40,6 +40,18 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ mensaje: 'Credenciales inválidas' });
         }
 
+        // Restricción de acceso: Solo roles 'Administrador' y 'Proveedor'
+        const rolNorm = (user.rol || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const esAdmin = rolNorm === 'administrador' || rolNorm === 'admin';
+        const esProveedor = rolNorm === 'proveedor';
+
+        if (!esAdmin && !esProveedor) {
+            return res.status(403).json({ 
+                error: 'Acceso no autorizado. Solo administradores y proveedores pueden ingresar.',
+                mensaje: 'Acceso no autorizado. Solo administradores y proveedores pueden ingresar.' 
+            });
+        }
+
         // Si es el administrador principal y estaba marcado como inactivo, reactivarlo automáticamente
         if (user.estado !== 'activo') {
             if (user.usuario === 'admin' || user.rol === 'Administrador') {

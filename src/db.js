@@ -1,5 +1,5 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+require('dotenv').config({ override: true });
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -19,15 +19,53 @@ async function initDB() {
     try {
         const connection = await pool.getConnection();
         await connection.query(`CREATE TABLE IF NOT EXISTS metodo_pago (id_metodo INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(50) NOT NULL)`);
-        const [metodos] = await connection.query('SELECT COUNT(*) as count FROM metodo_pago');
-        if (metodos[0].count === 0) {
-            await connection.query(`INSERT INTO metodo_pago (nombre) VALUES ('Efectivo'), ('Tarjeta'), ('Yape')`);
-        }
+        await connection.query(`
+            INSERT INTO metodo_pago (id_metodo, nombre) VALUES 
+            (1, 'Efectivo'), (2, 'Tarjeta'), (3, 'Yape')
+            ON DUPLICATE KEY UPDATE nombre = VALUES(nombre)
+        `);
         await connection.query(`CREATE TABLE IF NOT EXISTS comprobante (id_comprobante INT AUTO_INCREMENT PRIMARY KEY, serie VARCHAR(10) NOT NULL, numero VARCHAR(20) NOT NULL, id_venta INT NOT NULL UNIQUE)`);
         try {
             await connection.query(`ALTER TABLE venta ADD COLUMN id_metodo INT`);
             await connection.query(`ALTER TABLE venta ADD CONSTRAINT fk_venta_metodo FOREIGN KEY (id_metodo) REFERENCES metodo_pago(id_metodo)`);
         } catch(e) {}
+        try {
+            await connection.query(`ALTER TABLE venta ADD COLUMN subtotal DECIMAL(10,2) NOT NULL DEFAULT '0.00'`);
+        } catch(e) {}
+        try {
+            await connection.query(`ALTER TABLE venta ADD COLUMN igv DECIMAL(10,2) NOT NULL DEFAULT '0.00'`);
+        } catch(e) {}
+        try {
+            await connection.query(`UPDATE venta SET subtotal = ROUND(total / 1.18, 2), igv = ROUND(total - ROUND(total / 1.18, 2), 2) WHERE (subtotal = 0 OR subtotal IS NULL) AND total > 0`);
+        } catch(e) {}
+        
+        // Tabla de gestión de turnos de caja (Apertura y Cierre de Caja)
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS caja (
+                id_caja INT AUTO_INCREMENT PRIMARY KEY,
+                id_usuario INT NOT NULL,
+                monto_inicial DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                fecha_apertura DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                fecha_cierre DATETIME NULL,
+                monto_final_esperado DECIMAL(10,2) NULL,
+                monto_final_real DECIMAL(10,2) NULL,
+                diferencia DECIMAL(10,2) NULL,
+                total_ventas_efectivo DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                total_ventas_tarjeta DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                total_ventas_yape DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                total_ventas DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                cantidad_ventas INT NOT NULL DEFAULT 0,
+                estado ENUM('abierta', 'cerrada') NOT NULL DEFAULT 'abierta',
+                observaciones TEXT NULL,
+                KEY fk_caja_usuario (id_usuario),
+                CONSTRAINT fk_caja_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci
+        `);
+        try {
+            await connection.query(`ALTER TABLE venta ADD COLUMN id_caja INT NULL`);
+            await connection.query(`ALTER TABLE venta ADD CONSTRAINT fk_venta_caja FOREIGN KEY (id_caja) REFERENCES caja(id_caja)`);
+        } catch(e) {}
+
         await connection.query(`CREATE TABLE IF NOT EXISTS alerta_stock (id_alerta INT AUTO_INCREMENT PRIMARY KEY, fecha DATETIME NOT NULL, estado ENUM('activa', 'resuelta') DEFAULT 'activa', id_producto INT NOT NULL)`);
 
         // Soporte de recuperación de contraseña en usuario

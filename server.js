@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const path = require('path');
 
 const app = express();
@@ -23,6 +23,8 @@ app.use('/api/auth', require('./src/routes/auth.routes'));
 app.use('/api/productos', require('./src/routes/productos.routes'));
 app.use('/api/inventario', require('./src/routes/inventario.routes'));
 app.use('/api/ventas', require('./src/routes/ventas.routes'));
+app.use('/api/caja', require('./src/routes/caja.routes'));
+app.use('/api/reniec', require('./src/routes/reniec.routes'));
 app.use('/api/reportes', require('./src/routes/reportes.routes'));
 app.use('/api/usuarios', require('./src/routes/usuarios.routes'));
 app.use('/api/clientes', require('./src/routes/clientes.routes'));

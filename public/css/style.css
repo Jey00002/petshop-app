@@ -885,7 +885,7 @@ tbody tr:hover { background-color: #f8fafc; }
 
 @media print {
   body * { visibility: hidden; }
-  #ticket-print, #ticket-print * { visibility: visible; }
-  #ticket-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
+  #ticket-print, #ticket-print *, #arqueo-print, #arqueo-print *, #corte-print, #corte-print * { visibility: visible; }
+  #ticket-print, #arqueo-print, #corte-print { position: absolute; left: 0; top: 0; width: 100%; border: none; }
   .modal-overlay { background: white; }
 }

@@ -2,11 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PetShop Pro - Punto de Venta (POS)</title>
+    <meta name="theme-color" content="#0d5e5e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PetShop Pro">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/img/icon-192.png">
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/viewer.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mobile.css" media="(max-width: 768px)">
 </head>
 <body>
     <div class="layout">
@@ -18,23 +25,44 @@
             <ul class="sidebar-menu">
                 <li data-role="Administrador"><a href="admin.html"><i class='bx bxs-dashboard'></i> <span>Dashboard</span></a></li>
                 <li data-role="Administrador,Vendedor"><a href="pos.html" class="active"><i class='bx bx-cart-alt'></i> <span>Ventas (POS)</span></a></li>
-                <li data-role="Administrador,Almacén,Almacen"><a href="almacen.html"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
+                <li data-role="Administrador,Almacén,Almacen,Proveedor"><a href="almacen.html"><i class='bx bx-box'></i> <span>Inventario</span></a></li>
             </ul>
         </aside>
         
         <div class="main-content">
             <header class="topbar">
-                <h2>Punto de Venta</h2>
-                <div class="user-chip">
-                    <i class='bx bx-user-circle' style="font-size: 1.25rem; color:var(--primary)"></i>
-                    <span id="userName">Vendedor</span>
-                    <button class="btn btn-ghost" onclick="logout()" style="padding: 4px 8px; margin-left:10px;" title="Cerrar sesión">
-                        <i class='bx bx-log-out'></i>
-                    </button>
+                <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <h2 style="margin:0;">Punto de Venta</h2>
+                    <div id="cajaStatusChip" style="display:flex; align-items:center; gap:8px;"></div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <div id="cajaActionsBox" style="display:flex; gap:8px;"></div>
+                    <div class="user-chip">
+                        <i class='bx bx-user-circle' style="font-size: 1.25rem; color:var(--primary)"></i>
+                        <span id="userName">Vendedor</span>
+                        <button class="btn btn-ghost" onclick="logout()" style="padding: 4px 8px; margin-left:10px;" title="Cerrar sesión">
+                            <i class='bx bx-log-out'></i>
+                        </button>
+                    </div>
                 </div>
             </header>
             
             <main class="main-body" style="padding: 1rem;">
+                <!-- Banner Alerta Caja Cerrada -->
+                <div id="bannerCajaCerrada" style="display:none; background:#fff1f2; border:1px solid #fecdd3; color:#9f1239; padding:12px 18px; border-radius:10px; margin-bottom:14px; justify-content:space-between; align-items:center; box-shadow:var(--shadow-sm); flex-wrap:wrap; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:40px; height:40px; border-radius:50%; background:#ffe4e6; display:flex; align-items:center; justify-content:center; color:#e11d48; font-size:1.4rem;">
+                            <i class='bx bx-lock-alt'></i>
+                        </div>
+                        <div>
+                            <strong style="font-size:0.95rem;">La caja se encuentra cerrada</strong>
+                            <div style="font-size:0.83rem; color:#be123c;">Para comenzar a registrar ventas y cobrar, debes registrar la apertura de caja con el fondo inicial.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="abrirModalApertura()" style="padding:8px 16px; font-weight:600;">
+                        <i class='bx bx-key'></i> Abrir Caja Ahora
+                    </button>
+                </div>
                 <div class="pos-layout">
                     <!-- Catálogo de Productos con Imágenes -->
                     <div class="pos-catalog">
@@ -60,7 +88,20 @@
                             <div class="empty-state" style="padding: 2rem;"><i class='bx bx-cart'></i><p style="font-size:0.9rem; margin:0;">Carrito vacío</p></div>
                         </div>
                         <div class="cart-footer">
-                            <div class="cart-totals"><span>Total:</span> <span id="cartTotal">S/ 0.00</span></div>
+                            <div class="cart-totals-breakdown" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; font-size:0.83rem; color:#64748b; margin-bottom:4px;">
+                                    <span>Op. Gravada (Subtotal):</span>
+                                    <span id="cartSubtotal" style="font-weight:600; color:#334155;">S/ 0.00</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:0.83rem; color:#64748b; margin-bottom:6px;">
+                                    <span>I.G.V. (18%):</span>
+                                    <span id="cartIgv" style="font-weight:600; color:#334155;">S/ 0.00</span>
+                                </div>
+                                <div style="display:flex; justify-content:space-between; font-size:1.1rem; font-weight:800; color:var(--dark); border-top:1px dashed #cbd5e1; padding-top:6px;">
+                                    <span>TOTAL:</span>
+                                    <span id="cartTotal" style="color:var(--primary);">S/ 0.00</span>
+                                </div>
+                            </div>
                             
                             <!-- Selector de Cliente (RF11) -->
                             <div class="cart-client-box" style="margin-bottom:12px; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
@@ -75,11 +116,11 @@
                                 </div>
                             </div>
 
-                            <p style="font-size:0.8rem; color:#64748b; margin: 0 0 10px; font-weight:600;">Método de Pago:</p>
+                            <p style="font-size:0.8rem; color:#64748b; margin: 0 0 8px; font-weight:600;">Método de Pago:</p>
                             <div class="payment-methods" id="payMethods">
-                                <button class="pay-btn active" data-id="1"><i class='bx bx-money'></i> Efectivo</button>
-                                <button class="pay-btn" data-id="2"><i class='bx bx-credit-card'></i> Tarjeta</button>
-                                <button class="pay-btn" data-id="3"><i class='bx bx-qr-scan'></i> Yape/Plin</button>
+                                <button type="button" class="pay-btn active" data-id="1"><i class='bx bx-money'></i> Efectivo</button>
+                                <button type="button" class="pay-btn" data-id="2"><i class='bx bx-credit-card'></i> Tarjeta</button>
+                                <button type="button" class="pay-btn" data-id="3"><i class='bx bx-qr-scan'></i> Yape</button>
                             </div>
                             <button class="btn btn-primary" style="width: 100%; padding:14px; font-size: 1.05rem;" id="btnCobrar" onclick="procesarVenta()" disabled>
                                 <i class='bx bx-check-shield'></i> Cobrar S/ 0.00
@@ -114,7 +155,10 @@
                 <form id="formNuevoClientePOS">
                     <div class="form-group" style="margin-bottom:8px;">
                         <label style="font-size:0.75rem;">Documento (DNI / RUC) *</label>
-                        <input type="text" id="cliNuevoDoc" class="form-control" placeholder="8 u 11 dígitos" required>
+                        <input type="text" id="cliNuevoDoc" class="form-control" placeholder="8 dígitos para autocompletar DNI" maxlength="11" required>
+                        <div id="reniecLoading" style="display:none; font-size:0.78rem; color:var(--primary); font-weight:600; margin-top:4px;">
+                            <i class='bx bx-loader-alt bx-spin'></i> Consultando datos en RENIEC...
+                        </div>
                     </div>
                     <div class="form-group" style="margin-bottom:8px;">
                         <label style="font-size:0.75rem;">Nombre Completo o Razón Social *</label>
@@ -139,7 +183,7 @@
 
     <!-- Modal Comprobante (Sin emojis) -->
     <div class="modal-overlay" id="modalComprobante">
-        <div class="modal" style="max-width: 360px;">
+        <div class="modal" style="max-width: 380px;">
             <div class="modal-header">
                 <span>Venta Exitosa</span>
                 <i class='bx bx-check-circle' style="color:var(--success); font-size: 1.6rem;"></i>
@@ -152,12 +196,15 @@
                 <div class="ticket-row"><span>Fecha:</span> <span id="tkFecha"></span></div>
                 <div class="ticket-row"><span>Vendedor:</span> <span id="tkVend"></span></div>
                 <div class="ticket-row"><span>Cliente:</span> <span id="tkCliente" style="font-weight:600;"></span></div>
+                <div class="ticket-row"><span>Método Pago:</span> <b id="tkMetodo" style="color:var(--primary);"></b></div>
                 <div class="ticket-divider"></div>
                 <div id="tkDetalle"></div>
                 <div class="ticket-divider"></div>
-                <div class="ticket-row" style="font-size:15px; font-weight:bold;"><span>TOTAL:</span> <span id="tkTotal"></span></div>
+                <div class="ticket-row" style="font-size:12px; color:#475569;"><span>Op. Gravada:</span> <span id="tkSubtotal"></span></div>
+                <div class="ticket-row" style="font-size:12px; color:#475569;"><span>IGV (18%):</span> <span id="tkIgv"></span></div>
+                <div class="ticket-row" style="font-size:15px; font-weight:bold; color:var(--dark);"><span>TOTAL:</span> <span id="tkTotal"></span></div>
                 <div class="ticket-divider"></div>
-                <div style="text-align:center; font-size:12px; color:#475569;">Gracias por confiar en nuestros servicios veterinarios.</div>
+                <div style="text-align:center; font-size:11px; color:#64748b;">Precios incluyen 18% de IGV según Ley Peruana. Gracias por su preferencia.</div>
             </div>
             <div style="display:flex; gap:10px;">
                 <button class="btn btn-outline" style="flex:1;" onclick="window.print()"><i class='bx bx-printer'></i> Imprimir</button>
@@ -166,10 +213,338 @@
         </div>
     </div>
 
+    <!-- Modal Apertura de Caja -->
+    <div class="modal-overlay" id="modalAperturaCaja">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-header">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i class='bx bx-key' style="color:var(--primary); font-size:1.4rem;"></i> Apertura de Caja
+                </span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalAperturaCaja')"></i>
+            </div>
+            <form id="formAperturaCaja">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; padding:12px; border-radius:8px; margin-bottom:14px; font-size:0.85rem;">
+                    <div style="margin-bottom:4px;"><strong>Cajero:</strong> <span id="apCajeroNombre">Vendedor</span></div>
+                    <div><strong>Fecha y Hora:</strong> <span id="apFechaHora">-</span></div>
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="apMontoInicial" style="font-size:0.85rem; font-weight:700;">Monto Inicial en Efectivo (S/) *</label>
+                    <input type="number" id="apMontoInicial" class="form-control" placeholder="0.00" min="0" step="0.10" required style="font-size:1.1rem; font-weight:700; padding:10px;">
+                    <small style="color:#64748b; font-size:0.75rem; display:block; margin-top:4px;">
+                        Fondo de caja en efectivo para dar cambio/vuelto a los clientes.
+                    </small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem;" id="btnConfirmarApertura">
+                    <i class='bx bx-check-circle'></i> Abrir Turno de Caja
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Cierre y Arqueo de Caja -->
+    <div class="modal-overlay" id="modalCierreCaja">
+        <div class="modal" style="max-width: 480px;">
+            <div class="modal-header">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i class='bx bx-archive-in' style="color:var(--danger); font-size:1.4rem;"></i> Cierre y Arqueo de Caja
+                </span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalCierreCaja')"></i>
+            </div>
+            <form id="formCierreCaja">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span><strong>Cajero:</strong> <span id="cieCajeroNombre">-</span></span>
+                        <span><b id="cieNumTurno">Turno</b></span>
+                    </div>
+                    <div style="color:#64748b; font-size:0.8rem;">
+                        <strong>Apertura:</strong> <span id="cieFechaApertura">-</span>
+                    </div>
+                </div>
+
+                <!-- Resumen de Ventas del Turno -->
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:14px; font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Monto Inicial (Fondo):</span>
+                        <strong id="cieMontoInicialTxt">S/ 0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Ventas en Efectivo:</span>
+                        <span id="cieVentasEfectivoTxt" style="font-weight:600; color:#0f766e;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Ventas con Tarjeta:</span>
+                        <span id="cieVentasTarjetaTxt" style="font-weight:600; color:#0284c7;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span>Ventas con Yape:</span>
+                        <span id="cieVentasYapeTxt" style="font-weight:600; color:#9333ea;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px dashed #cbd5e1; padding-top:6px; color:#334155;">
+                        <span>Total Facturado (<span id="cieCantVentasTxt">0</span> ventas):</span>
+                        <span id="cieTotalFacturadoTxt">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.95rem; font-weight:800; border-top:1px solid #cbd5e1; margin-top:6px; padding-top:6px; color:var(--dark);">
+                        <span>Efectivo Esperado en Caja:</span>
+                        <span id="cieEsperadoEfectivoTxt" style="color:var(--primary);">S/ 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Conteo de Efectivo por el Cajero -->
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label for="cieMontoReal" style="font-size:0.85rem; font-weight:700;">Efectivo Real Contado en Caja (S/) *</label>
+                    <input type="number" id="cieMontoReal" class="form-control" placeholder="0.00" min="0" step="0.10" required style="font-size:1.15rem; font-weight:800; padding:10px;">
+                    <div id="cieDiferenciaBox" style="margin-top:6px; font-size:0.82rem; font-weight:700;"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="cieObservaciones" style="font-size:0.8rem; font-weight:600; color:#64748b;">Observaciones (Opcional):</label>
+                    <textarea id="cieObservaciones" class="form-control" rows="2" placeholder="Notas sobre el cierre o justificación de diferencias..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; padding:12px; font-size:1rem; background:var(--danger); border-color:var(--danger);" id="btnConfirmarCierre">
+                    <i class='bx bx-lock-alt'></i> Confirmar y Cerrar Caja
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ticket Arqueo / Cierre de Caja -->
+    <div class="modal-overlay" id="modalArqueoTicket">
+        <div class="modal" style="max-width: 380px;">
+            <div class="modal-header">
+                <span>Arqueo de Caja Completado</span>
+                <i class='bx bx-check-circle' style="color:var(--success); font-size: 1.6rem;"></i>
+            </div>
+            <div class="ticket" id="arqueo-print">
+                <div class="ticket-brand">PETSHOP PRO</div>
+                <div class="ticket-sub">COMPROBANTE DE ARQUEO Y CIERRE DE CAJA</div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-row"><span>Turno / Caja:</span> <b id="arqNum"></b></div>
+                <div class="ticket-row"><span>Cajero:</span> <span id="arqCajero"></span></div>
+                <div class="ticket-row"><span>Apertura:</span> <span id="arqApertura"></span></div>
+                <div class="ticket-row"><span>Cierre:</span> <span id="arqCierre"></span></div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-row"><span>Fondo Inicial:</span> <span id="arqFondo"></span></div>
+                <div class="ticket-row"><span>Ventas Efectivo:</span> <span id="arqVentasEf"></span></div>
+                <div class="ticket-row"><span>Ventas Tarjeta:</span> <span id="arqVentasTj"></span></div>
+                <div class="ticket-row"><span>Ventas Yape:</span> <span id="arqVentasYp"></span></div>
+                <div class="ticket-row" style="font-weight:700;"><span>TOTAL VENTAS:</span> <span id="arqTotalVentas"></span></div>
+                <div class="ticket-divider"></div>
+                <div class="ticket-row" style="font-weight:700;"><span>Efectivo Esperado:</span> <span id="arqEsperado"></span></div>
+                <div class="ticket-row" style="font-weight:700;"><span>Efectivo Real:</span> <span id="arqReal"></span></div>
+                <div class="ticket-row" style="font-size:14px; font-weight:800;"><span>DIFERENCIA:</span> <span id="arqDiferencia"></span></div>
+                <div class="ticket-row" style="font-size:12px;"><span>Estado:</span> <b id="arqEstadoCuadre"></b></div>
+                <div class="ticket-divider"></div>
+                <div id="arqObsRow" style="font-size:11px; color:#64748b; margin-bottom:8px; display:none;">
+                    <b>Notas:</b> <span id="arqObsTxt"></span>
+                </div>
+                <div style="text-align:center; font-size:11px; color:#64748b; margin-top:14px; padding-top:10px; border-top:1px solid #cbd5e1;">
+                    <div>_____________________________</div>
+                    <div>Firma del Cajero</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="imprimirArqueo()"><i class='bx bx-printer'></i> Imprimir</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="closeModal('modalArqueoTicket')"><i class='bx bx-check'></i> Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Corte Parcial en Vivo (Arqueo X) -->
+    <div class="modal-overlay" id="modalCorteParcial">
+        <div class="modal" style="max-width: 440px;">
+            <div class="modal-header">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i class='bx bx-calculator' style="color:var(--primary); font-size:1.4rem;"></i> Corte Parcial de Caja (Arqueo X)
+                </span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalCorteParcial')"></i>
+            </div>
+            <div style="margin-bottom:14px;">
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span><strong>Cajero:</strong> <span id="cpCajeroNombre">-</span></span>
+                        <span><b id="cpNumTurno">Turno #</b></span>
+                    </div>
+                    <div style="color:#64748b; font-size:0.8rem; margin-bottom:2px;">
+                        <strong>Apertura:</strong> <span id="cpFechaApertura">-</span>
+                    </div>
+                    <div style="color:#0284c7; font-size:0.8rem;">
+                        <strong>Hora del Corte:</strong> <span id="cpFechaCorte">-</span>
+                    </div>
+                </div>
+
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.85rem;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Fondo Inicial:</span>
+                        <strong id="cpMontoInicial">S/ 0.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Ventas en Efectivo:</span>
+                        <span id="cpVentasEf" style="font-weight:600; color:#0f766e;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span>Ventas con Tarjeta:</span>
+                        <span id="cpVentasTj" style="font-weight:600; color:#0284c7;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span>Ventas con Yape:</span>
+                        <span id="cpVentasYp" style="font-weight:600; color:#9333ea;">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-weight:700; border-top:1px dashed #cbd5e1; padding-top:6px; color:#334155;">
+                        <span>Total Facturado (<span id="cpCantVentas">0</span> ventas):</span>
+                        <span id="cpTotalVentas">S/ 0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:1rem; font-weight:800; border-top:1px solid #cbd5e1; margin-top:6px; padding-top:6px; color:var(--primary);">
+                        <span>Efectivo Actual en Caja:</span>
+                        <span id="cpEsperadoEf">S/ 0.00</span>
+                    </div>
+                </div>
+
+                <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:10px 12px; font-size:0.8rem; color:#065f46; display:flex; align-items:center; gap:8px;">
+                    <i class='bx bx-info-circle' style="font-size:1.2rem; flex-shrink:0;"></i>
+                    <span>Este corte es una consulta en vivo. <strong>Tu caja continúa abierta</strong> para seguir cobrando ventas.</span>
+                </div>
+
+                <!-- Ticket oculto para impresión del Corte Parcial -->
+                <div style="display:none;">
+                    <div class="ticket" id="corte-print">
+                        <div class="ticket-brand">PETSHOP PRO</div>
+                        <div class="ticket-sub">CORTE PARCIAL EN VIVO (ARQUEO X)</div>
+                        <div class="ticket-divider"></div>
+                        <div class="ticket-row"><span>Turno / Caja:</span> <b id="prCpNum"></b></div>
+                        <div class="ticket-row"><span>Cajero:</span> <span id="prCpCajero"></span></div>
+                        <div class="ticket-row"><span>Apertura:</span> <span id="prCpApertura"></span></div>
+                        <div class="ticket-row"><span>Hora Corte:</span> <span id="prCpHora"></span></div>
+                        <div class="ticket-divider"></div>
+                        <div class="ticket-row"><span>Fondo Inicial:</span> <span id="prCpFondo"></span></div>
+                        <div class="ticket-row"><span>Ventas Efectivo:</span> <span id="prCpEf"></span></div>
+                        <div class="ticket-row"><span>Ventas Tarjeta:</span> <span id="prCpTj"></span></div>
+                        <div class="ticket-row"><span>Ventas Yape:</span> <span id="prCpYp"></span></div>
+                        <div class="ticket-row" style="font-weight:700;"><span>TOTAL FACTURADO:</span> <span id="prCpTotal"></span></div>
+                        <div class="ticket-divider"></div>
+                        <div class="ticket-row" style="font-size:13px; font-weight:800;"><span>EFECTIVO EN CAJA:</span> <span id="prCpEsperado"></span></div>
+                        <div class="ticket-divider"></div>
+                        <div style="text-align:center; font-size:10px; color:#64748b; margin-top:10px;">
+                            *** CORTE INFORMATIVO - CAJA EN CURSO ***
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-outline" style="flex:1;" onclick="imprimirCorteParcial()"><i class='bx bx-printer'></i> Imprimir Corte</button>
+                <button class="btn btn-primary" style="flex:1;" onclick="closeModal('modalCorteParcial')"><i class='bx bx-check'></i> Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cierres del Día (Historial y Turnos de Hoy) -->
+    <div class="modal-overlay" id="modalCierresDelDia">
+        <div class="modal" style="max-width: 820px; width:95%;">
+            <div class="modal-header">
+                <span style="display:flex; align-items:center; gap:8px;">
+                    <i class='bx bx-history' style="color:var(--primary); font-size:1.4rem;"></i> Cierres y Turnos del Día
+                </span>
+                <i class='bx bx-x modal-close' onclick="closeModal('modalCierresDelDia')"></i>
+            </div>
+            <div>
+                <!-- Filtro de fecha y botón actualizar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label for="fechaCierresDiaInput" style="font-size:0.85rem; font-weight:600; color:#475569;">Fecha:</label>
+                        <input type="date" id="fechaCierresDiaInput" class="form-control" style="padding:6px 12px; font-size:0.85rem; width:auto;">
+                        <button type="button" class="btn btn-outline" style="padding:6px 12px; font-size:0.85rem;" onclick="cargarCierresDelDia()">
+                            <i class='bx bx-refresh'></i> Actualizar
+                        </button>
+                    </div>
+                    <span style="font-size:0.8rem; color:#64748b;">Muestra todos los turnos abiertos y cerrados durante el día</span>
+                </div>
+
+                <!-- KPIs del día -->
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:16px;">
+                    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:0.75rem; color:#64748b; font-weight:600;">TURNOS DEL DÍA</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:var(--dark);" id="kpiDiaTurnos">0</div>
+                        <small style="font-size:0.72rem; color:#64748b;" id="kpiDiaTurnosSub">0 cerrados</small>
+                    </div>
+                    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:0.75rem; color:#166534; font-weight:600;">EFECTIVO TOTAL</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#15803d;" id="kpiDiaEfectivo">S/ 0.00</div>
+                        <small style="font-size:0.72rem; color:#166534;">Recaudado en efectivo</small>
+                    </div>
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:0.75rem; color:#1e40af; font-weight:600;">DIGITAL (TARJETA/YAPE)</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#1d4ed8;" id="kpiDiaDigital">S/ 0.00</div>
+                        <small style="font-size:0.72rem; color:#1e40af;">Vía tarjeta y Yape</small>
+                    </div>
+                    <div style="background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:10px 12px;">
+                        <div style="font-size:0.75rem; color:#6b21a8; font-weight:600;">TOTAL FACTURADO</div>
+                        <div style="font-size:1.25rem; font-weight:800; color:#7e22ce;" id="kpiDiaTotal">S/ 0.00</div>
+                        <small style="font-size:0.72rem; color:#6b21a8;" id="kpiDiaCantVentas">0 ventas</small>
+                    </div>
+                </div>
+
+                <!-- Tabla de turnos del día -->
+                <div class="table-container" style="max-height: 280px; overflow-y: auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:14px;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
+                        <thead style="background:#f1f5f9; position:sticky; top:0; z-index:1;">
+                            <tr>
+                                <th style="padding:8px 10px; text-align:left;"># Turno</th>
+                                <th style="padding:8px 10px; text-align:left;">Cajero</th>
+                                <th style="padding:8px 10px; text-align:left;">Horario</th>
+                                <th style="padding:8px 10px; text-align:right;">Fondo</th>
+                                <th style="padding:8px 10px; text-align:right;">Ventas Ef.</th>
+                                <th style="padding:8px 10px; text-align:right;">Total Ventas</th>
+                                <th style="padding:8px 10px; text-align:right;">Real Contado</th>
+                                <th style="padding:8px 10px; text-align:center;">Diferencia</th>
+                                <th style="padding:8px 10px; text-align:center;">Estado</th>
+                                <th style="padding:8px 10px; text-align:center;">Ticket</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCierresDelDiaBody">
+                            <tr>
+                                <td colspan="10" style="text-align:center; padding:24px; color:#64748b;">
+                                    Cargando turnos...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+                <button class="btn btn-outline" onclick="closeModal('modalCierresDelDia')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de Navegación Inferior para Móviles (PWA) -->
+    <nav class="mobile-bottom-nav">
+        <a href="admin.html" class="bottom-nav-item" data-role="Administrador">
+            <i class='bx bxs-dashboard'></i>
+            <span>Admin</span>
+        </a>
+        <a href="pos.html" class="bottom-nav-item active" data-role="Administrador,Vendedor">
+            <i class='bx bx-cart-alt'></i>
+            <span>Ventas</span>
+        </a>
+        <a href="almacen.html" class="bottom-nav-item" data-role="Administrador,Almacén,Almacen,Proveedor">
+            <i class='bx bx-box'></i>
+            <span>Inventario</span>
+        </a>
+        <a href="javascript:void(0)" onclick="logout()" class="bottom-nav-item">
+            <i class='bx bx-log-out'></i>
+            <span>Salir</span>
+        </a>
+    </nav>
+
     <div id="imageGalleryViewer" style="display: none;"></div>
 
     <script src="js/viewer.min.js"></script>
     <script src="js/api.js"></script>
     <script src="js/pos.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+    </script>
 </body>
 </html>
